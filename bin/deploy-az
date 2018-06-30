@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -e
+set -u
+
+script_path=$(readlink -e "${BASH_SOURCE[0]}")
+script_dir="${script_path%/*}"
+
+declare owner="${1}"
+declare image="${2}"
+declare version="${3}"
+declare registry="${4}"
+
+required owner image version registry
+
+docker tag "${owner}/${image}:${version}" "${registry}/${owner}/${image}:${version}"
+docker push "${registry}/${owner}:${version}"

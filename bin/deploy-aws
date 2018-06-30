@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -e
+set -u
+
+script_path=$(readlink -e "${BASH_SOURCE[0]}")
+script_dir="${script_path%/*}"
+
+#source ../util/util.sh
+source "${script_dir}/../util/util.sh"
+
+declare -r aws_account_id="${1:-115057027035}"
+declare -r aws_region="${2:-us-east-1}"
+declare -r ecr_repo_name="${3:-talend/eost}"
+declare -r app_name="${4:-talend_sample_container_app_v2}"
+declare -r image_version="${5:-0.1.0}"
+
+declare ecr_login_command
+ecr_login_command=$(aws ecr get-login --region us-east-1)
+#echo "${ecr_login_command}"
+${ecr_login_command}
+
+declare -r local_docker_user="${USER}"
+
+aws ecr create-repository --repository-name "${ecr_repo_name}/${app_name}" && true
+
+if [ "${?}" == 0 ]; then
+    echo "ECR repository created"
+else
+    echo "ECR repository already exists"
+fi
+
+
+docker tag "${local_docker_user}/${app_name}:${image_version}" "${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com/${ecr_repo_name}/${app_name}:${image_version}"
+docker push "${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com/${ecr_repo_name}/${app_name}:${image_version}"

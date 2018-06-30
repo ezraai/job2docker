@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -e
+set -u
+set -o pipefail
+
+package_script_path=$(readlink -e "${BASH_SOURCE[0]}")
+package_script_dir="${package_script_path%/*}"
+
+#source ../util/util.sh
+source "${package_script_dir}/../util/util.sh"
+
+#source "tcf-package.sh"
+source "${package_script_dir}/tcf-package.sh"
+
+if [ "${1:-}" == "-h" ]; then
+    declare usage="./package [ <artifactid> [ <groupid> [ <version> [ <manifest> [ <nexus_host> ] ] ] ] ]"
+    echo "${usage}"
+    exit
+fi
+
+declare artifactid="${1:-docker_hello_world}"
+declare groupid="${2:-com/talend/se/container}"
+declare version="${3:-0.1.0}"
+declare manifest="${4:-manifest.cfg}"
+declare nexus_host="${5:-192.168.99.1}"
+
+required artifactid groupid version manifest nexus_host
+
+export INFO_LOG=true
+#export DEBUG_LOG=true
+
+talend_packager -m "${manifest}" -n "${nexus_host}" -g "${groupid}" -a "${artifactid}" -v "${version}" -w "/tmp/work"
+
+infoLog "Finished"

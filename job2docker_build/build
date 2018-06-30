@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+[ "${TALEND_BUILD_FLAG:-0}" -gt 0 ] && return 0
+
+export TALEND_BUILD_FLAG=1
+
+set -e
+set -u
+set -o pipefail
+
+talend_build_script_path=$(readlink -e "${BASH_SOURCE[0]}")
+talend_build_script_dir="${talend_build_script_path%/*}"
+
+source "${talend_build_script_dir}/../util/util.sh"
+
+export INFO_LOG=true
+#export DEBUG_LOG=true
+
+if [ "${1:-}" == "-h" ]; then
+    declare usage="./build <job_owner> <job_name> <job_version> <job_tgz_file> [ <job_parent_id> ]"
+    echo "${usage}"
+    exit
+fi
+
+declare -r job_owner="${1:-}"
+declare -r job_name="${2:-}"
+declare -r job_version="${3:-}"
+declare -r job_tgz_file="${4:-}"
+declare -r job_parent_dir="${5:-/talend}"
+
+required job_owner job_name job_version job_tgz_file job_parent_dir
+
+declare -r image_tag="${job_owner}/${job_name}:${job_version}"
+
+infoVar job_owner
+infoVar job_name
+infoVar job_version
+infoVar job_tgz_file
+infoVar job_parent_dir
+infoVar image_tag
+
+pushd "${talend_build_script_dir}"
+
+cp "${job_tgz_file}" job.tgz
+
+cp Dockerfile.template Dockerfile
+
+cat >> Dockerfile << EOF
+ENTRYPOINT [ "/bin/ash", "${job_parent_dir}/${job_name}_${job_version}/${job_name}/${job_name}_run.sh" ]
+EOF
+
+debugLog docker build --no-cache -t "${image_tag}" \
+                      --build-arg job_name="${job_name}" \
+                      --build-arg job_version="${job_version}" \
+                      --build-arg job_tgz_file="job.tgz" \
+                      --build-arg job_parent_dir="${job_parent_dir}" .
+
+docker build --no-cache -t "${image_tag}" \
+             --build-arg job_name="${job_name}" \
+             --build-arg job_version="${job_version}" \
+             --build-arg job_tgz_file="job.tgz" \
+             --build-arg job_parent_dir="${job_parent_dir}" .
+
+rm job.tgz
+
+popd
+
+infoLog "Finished"

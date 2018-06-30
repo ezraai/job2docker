@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+
+set -e
+set -u
+set -o pipefail
+
+run_script_path=$(readlink -e "${BASH_SOURCE[0]}")
+run_script_dir="${run_script_path%/*}"
+
+source "${run_script_dir}/container-run.sh"
+
+if [ "${1:-}" == "-h" ]; then
+    declare usage="./run [ <job_id> [ <project_name [ <image> [ <image_version> [ <app_name> [ <job_name> [ <job_version> ] ] ] ] ] ] ]"
+    echo "${usage}"
+    exit
+fi
+
+# declare environment vars with empty defaults to satisify -u option
+declare APP_NAME="${APP_NAME:-}"
+
+declare job_id="${1:-}"
+declare -r job_name="${2:-t1_docker_create_customer_s3}"
+declare -r project_name="${3:-SE_DEMO}"
+declare -r app_name="${4:-${APP_NAME:-${app_name:-talend_sample_container_app}}}"
+declare -r job_version="${5:-0.1.0-SNAPSHOT}"
+declare -r image="${6:-${USER}/${app_name}}"
+declare -r image_version="${7-0.1.0}"
+
+required job_name project_name app_name job_version image image_version
+
+if [ -z "${job_id}" ]; then
+    job_id=$(uuidgen -t)
+    echo "WARNING: no job_id provided, using generated job_id=${job_id}" 1>&2
+fi
+
+# container has knowledge of app name
+declare -r global_root="/home/eost/talend/docker"
+declare -r project_root="${global_root}/${project_name}"
+declare -r app_root="${project_root}/${app_name}"
+declare -r job_root="${app_root}/${job_name}"
+declare -r job_instance_root="${job_root}/${job_id}"
+# talend/docker/sample/SE_DEMO/talend_sample_container_app/t0_docker_create_customer/xxxx
+
+# jobs do not have knowledge of app name, these paths are relative to the job in the container
+declare -r global_target="talend/work"
+declare -r project_target="${global_target}/${project_name}"
+declare -r job_target="${project_target}/${job_name}"
+declare -r job_instance_target="${job_target}/${job_id}"
+# talend/SE_DEMO/t0_docker_create_customer/xxx
+
+echo "TALEND_${project_name^^}_${job_name^^}_JOB_ID=${job_id}"
+
+# we use re-use ${project_root}/in for common input file
+# it is mapped to in_dir context variable by the job level configuration ${job_root}/job.cfg
+# note that the paths within job.cfg must be relative to the container, not the host OS
+
+echo "${global_root}/config   ==>   /${global_target}/config:ro"
+echo "${project_root}/config   ==>   /${project_target}/config:ro"
+echo "${job_root}/config   ==>   /${job_target}/config:ro"
+echo "${job_instance_root}/config   ==>   /${job_instance_target}/config:ro"
+echo "${job_root}/amc   ==>   /${job_target}/amc"
+echo "${app_root}/in   ==>   /${job_instance_target}/in:ro"
+echo "${job_instance_root}/out   ==>   /${job_instance_target}/out"
+echo "${app_root}/data   ==>   /${job_instance_target}/data"
+echo "${job_instance_root}/temp   ==>   /${job_instance_target}/temp"
+echo "${job_instance_root}/log   ==>   /${job_instance_target}/log"
+
+# set JOB_ID environment variable to allow introspection of container
+docker run \
+    --env "TALEND_${project_name^^}_${job_name^^}_JOB_ID=${job_id}" \
+    --rm \
+    -v "${global_root}/config:/${global_target}/config:ro" \
+    -v "${project_root}/config:/${project_target}/config:ro" \
+    -v "${job_root}/config:/${job_target}/config:ro" \
+    -v "${job_instance_root}/config:/${job_instance_target}/config:ro" \
+    -v "${job_root}/amc:/${job_target}/amc" \
+    -v "${app_root}/in:/${job_instance_target}/in:ro" \
+    -v "${job_instance_root}/out:/${job_instance_target}/out" \
+    -v "${app_root}/data:/${job_instance_target}/data" \
+    -v "${job_instance_root}/temp:/${job_instance_target}/temp" \
+    -v "${job_instance_root}/log:/${job_instance_target}/log" \
+    "${image}:${image_version}" \
+    "/talend/${app_name}/${job_name}/${job_name}_run.sh" "--context_param" "job_id=${job_id}"
+
+# add -it and comment out --rm and entry point in order to launch interactively
+
+: <<EOF
+# set JOB_ID environment variable to allow introspection of container
+docker run \
+    --env "TALEND_${project_name^^}_${job_name^^}_JOB_ID=${job_id}" \
+    -v "${global_root}/config:/${global_target}/config:ro" \
+    -v "${project_root}/config:/${project_target}/config:ro" \
+    -v "${job_root}/config:/${job_target}/config:ro" \
+    -v "${job_instance_root}/config:/${job_instance_target}/config:ro" \
+    -v "${job_root}/amc:/${job_target}/amc" \
+    -v "${app_root}/in:/${job_instance_target}/in:ro" \
+    -v "${job_instance_root}/out:/${job_instance_target}/out" \
+    -v "${app_root}/data:/${job_instance_target}/data" \
+    -v "${job_instance_root}/temp:/${job_instance_target}/temp" \
+    -v "${job_instance_root}/log:/${job_instance_target}/log" \
+    -it \
+    "${image}:${image_version}"
+EOF
