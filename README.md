@@ -57,7 +57,7 @@ The script will clone the job2docker directory and create j2d and containerized 
 The files can be installed under an alternate directory by passing a parameter to the script.
 
 ````bash
-    bash <(curl https://raw.githubusercontent.com/Talend/job2docker/master/job2docker-setup ${HOME}/talend)
+    bash <(curl https://raw.githubusercontent.com/Talend/job2docker/master/job2docker-setup) ${HOME}/talend
 ````
 
 ### Manual Setup

@@ -9,9 +9,11 @@ declare -r work_dir="j2d"
 
 declare -r root_dir="${1:-${HOME}}"
 
+# create root_dir if it does not exist
+[ ! -d "${root_dir}" ] && mkdir -p "${root_dir}"
+
 # goto root directory
 cd "${root_dir}"
-
 
 # clone the job2docker repo
 git clone "${git_repo}"
