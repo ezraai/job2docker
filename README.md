@@ -1,16 +1,41 @@
 # Talend Docker Example
 
-This repository includes sample bash scripts which allow you to deploy Talend jobs to Docker containers.
+This repository includes sample bash scripts and utilities which allow you to deploy Talend jobs to Docker containers.
 
 The `job2docker` approach converts a single Talend job zip file to a container.
 The resulting Docker image will have a single entry point for the job.
 It is intended for use by developers during their build / test / debug cycle and provides desktop parity.
 
-* [Prerequisites](docs/prerequisites.md)
+
+* [Job2Docker Workflow](#job2docker-workflow)
+* [Prerequisites](#prerequisites)
 * [Setup](#setup)
 * [Environment](#environment)
 * [Directory Index](#directory-index)
 * [Getting Started](#getting-started)
+
+
+## Job2Docker Workflow
+
+1.  A Talend job2docker_listener job is used to monitor a shared directory.
+2.  The developer clicks Build in Talend Studio to create Talend job zip file in the shared directory.
+3.  The Talend `job2docker_listener` triggers the `job2docker` script to convert the Talend zip file to a tgz ready for Docker.
+4.  The Talend `job2docker_listener` triggers the `job2docker_build` script.
+5.  The Talend `job2docker_listener` optionally publishes the resulting container to a Docker Registry.
+
+
+Job2docker can be incorporated into a CI build environment, but it is out of scope for this cookbook.
+When run as part of the CI build script, job2docker will presumably run on a CI server local to Nexus and the SCM.
+Running job2docker in such a CI server will create a Docker image and supporting artifacts closer to the Docker registry so there will be less network overhead than transferring from a laptop.
+
+
+## Pre-Requisites
+
+* [Docker](docs/install-docker.md)
+* [Git](https://gist.github.com/derhuerst/1b15ff4652a867391f03#file-linux-md)
+* [Oracle JRE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+* [Talend Studio](https://info.talend.com/request-talend-data-integration.html)
+* A [shared folder](docs/vm_shared_folder.md) accessible from both Studio and docker machines.
 
 
 ## Setup
