@@ -4,10 +4,10 @@ set -e
 set -u
 set -o pipefail
 
-
-declare -r root_dir="${HOME}"
 declare -r git_repo="https://github.com/Talend/job2docker.git"
 declare -r work_dir="j2d"
+
+declare -r root_dir="${1:-${HOME}}"
 
 # goto root directory
 cd "${root_dir}"
