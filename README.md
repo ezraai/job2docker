@@ -29,7 +29,7 @@ When run as part of the CI build script, job2docker will presumably run on a CI 
 Running job2docker in such a CI server will create a Docker image and supporting artifacts closer to the Docker registry so there will be less network overhead than transferring from a laptop.
 
 
-## Pre-Requisites
+## Prerequisites
 
 * [Docker](docs/install-docker.md)
 * [Git](https://gist.github.com/derhuerst/1b15ff4652a867391f03#file-linux-md)
