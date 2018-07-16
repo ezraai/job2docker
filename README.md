@@ -38,7 +38,7 @@ It is intended for use by developers during their build / test / debug cycle and
 ## Setup
 
 A setup script is provided for linux.  
-The script will clone the job2docker directory and working directories under a directory which defaults to ${HOME}/talend.
+The script will clone the job2docker directory and working directories under a target directory which defaults to ${HOME}/talend.
 
 ````bash
     bash <(curl https://raw.githubusercontent.com/Talend/job2docker/master/job2docker-setup)
@@ -48,6 +48,12 @@ The files can be installed under an alternate directory by passing a parameter t
 
 ````bash
     bash <(curl https://raw.githubusercontent.com/Talend/job2docker/master/job2docker-setup) ${HOME}/mytalend
+````
+
+Launch the job2docker_listener from the target directory.
+
+````bash
+    ${HOME}/talend/job2docker_listener
 ````
 
 [Manual install instructions](docs/manual_install.md) are available if you prefer.
