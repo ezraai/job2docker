@@ -9,6 +9,8 @@ declare -r work_dir="j2d"
 
 declare -r root_dir="${1:-${HOME}/talend}"
 
+echo "Starting Talend job2docker install to ${root_dir}"
+
 mkdir -p "${root_dir}"
 cd "${root_dir}"
 
@@ -49,3 +51,5 @@ cd "${root_dir}/${work_dir}/job2docker_listener"
 ./job2docker_listener_run.sh
 EOF
 chmod u+x "${root_dir}/job2docker_listener"
+
+echo "Finished installing Talend job2docker to ${root_dir}"
