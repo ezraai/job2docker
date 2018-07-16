@@ -13,7 +13,7 @@ The next step is to use the VirtualBox or VMware gui client to configure a share
 * Click the add folder icon and give your shared folder a logical name and then select the folder on the host OS (Windows).
 * Click ok to save your changes.
 
-![sharing folders with virtualbox](pictures/virtual_box_share_folders.png)
+![sharing folders with virtualbox](pictures/virtualbox_share_folders.png)
 
 You will need to mount the shared folder using the logical name to a local directory in the guest OS (Linux).
 You need to first create the local directory to which to mount the shared folder and then use the mount command.
