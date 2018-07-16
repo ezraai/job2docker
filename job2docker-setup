@@ -27,8 +27,7 @@ unzip "${root_dir}/job2docker/jobs/job2docker_listener_0.1.zip"
 mkdir -p "${root_dir}/${work_dir}/containerized"
 
 # set exec permission on job2docker_listener
-cd "${root_dir}/${work_dir}/job2docker_listener"
-chmod +x job2docker_listener_run.sh
+chmod +x "${root_dir}/${work_dir}/job2docker_listener/job2docker_listener_run.sh"
 
 # create job2docker_listener context variables default properties file
 # note that the working_dir in the properties file below is different than the work_dir used in this script

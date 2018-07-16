@@ -62,7 +62,7 @@ The files can be installed under an alternate directory by passing a parameter t
 
 ### Manual Setup
 
-### Install Docker
+#### Install Docker
 
 Install Docker for your host OS
 
@@ -110,7 +110,7 @@ If you are running Studio on Linux then just create a directory that will be use
 
 If you are running Studio on Windows, then either use either a network share common to both Linux and Windows machines or [create a Shared folder](https://www.techrepublic.com/article/how-to-share-folders-between-guest-and-host-in-virtualbox/).  You will build your jobs from Studio to this directory and it will be monitored by the job2docker utililty.
 
-### Job2Docker Listener
+#### Job2Docker Listener
 
 The job2docker_listener is just a Talend job that listens on a directory and kicks off the bash scripts found in this git repo.
 The `job2docker_listener_0.1.zip` file is in the jobs directory.  It contains the already built job.
