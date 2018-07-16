@@ -44,4 +44,8 @@ deploy_command=${root_dir}/job2docker/bin/deploy-aws
 job_owner=eost
 EOF
 
-ln -s "${root_dir}/${work_dir}/job2docker_listener/job2docker_listener_run.sh" "${root_dir}/job2docker_listener_run.sh"
+cat > "${root_dir}/job2docker_listener" <<EOF
+cd "${root_dir}/${work_dir}/job2docker_listener"
+./job2docker_listener_run.sh
+EOF
+chmod u+x "${root_dir}/job2docker_listener"
