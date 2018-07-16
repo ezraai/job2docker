@@ -13,7 +13,7 @@ git clone https://github.com/Talend/job2docker.git
 If you are running Studio on Linux then just create a directory that will be used as the target for Studio builds.
 
 If you are running Studio on Windows, then either use either a network share common to both Linux and Windows machines
-or [create a Shared folder](docs/vm_shared_folder.md).
+or [create a Shared folder](vm_shared_folder.md).
 You will build your jobs from Studio to this directory and it will be monitored by the job2docker utililty.
 
 ## Job2Docker Listener
