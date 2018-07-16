@@ -7,7 +7,7 @@ set -o pipefail
 declare -r git_repo="https://github.com/Talend/job2docker.git"
 declare -r work_dir="j2d"
 
-declare -r root_dir="${1:-${HOME}}"
+declare -r root_dir="${1:-${HOME}/talend}"
 
 mkdir -p "${root_dir}"
 cd "${root_dir}"
