@@ -53,4 +53,7 @@ cd "${root_dir}/${work_dir}/job2docker_listener"
 EOF
 chmod u+x "${root_dir}/job2docker_listener"
 
-echo "Finished installing Talend job2docker to ${root_dir}"
+echo "Finished installing Talend job2docker to '${root_dir}'"
+echo "job2docker will listen on '${shared_job_dir}'"
+echo "To run job2docker:    ${root_dir}/job2docker_listener"
+echo "Use Taled Studio to build a job zip file to this shared directory"

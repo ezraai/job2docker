@@ -6,6 +6,7 @@
 * [Git](https://gist.github.com/derhuerst/1b15ff4652a867391f03#file-linux-md)
 * [Oracle JRE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 * [Talend Studio](https://info.talend.com/request-talend-data-integration.html)
+* A [shared folder](docs/vm_shared_folder.md) accessible from both Studio and docker machines.
 
 
 ## Install Docker
