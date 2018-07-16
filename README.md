@@ -22,10 +22,16 @@ The script will clone the job2docker directory and working directories under a t
     bash <(curl https://raw.githubusercontent.com/Talend/job2docker/master/job2docker-setup)
 ````
 
-The files can be installed under an alternate directory by passing a parameter to the script.
+Jobs built by Studio are dropped into a shared directory that defaults to `${HOME}/shared_jobs`.  This can be overridden by passing a parameter.
 
 ````bash
-    bash <(curl https://raw.githubusercontent.com/Talend/job2docker/master/job2docker-setup) ${HOME}/mytalend
+    bash <(curl https://raw.githubusercontent.com/Talend/job2docker/master/job2docker-setup) ${HOME}/shared_jobs ${HOME}/my_shared_jobs
+````
+
+The files can be installed under an alternate directory by passing a second parameter to the script.  Note that the shared job directory parameter must also be supplied as the first argument.
+
+````bash
+    bash <(curl https://raw.githubusercontent.com/Talend/job2docker/master/job2docker-setup) ${HOME}/shared_jobs ${HOME}/mytalend
 ````
 
 Launch the job2docker_listener from the target directory.
