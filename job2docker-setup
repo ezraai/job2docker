@@ -7,7 +7,7 @@ set -o pipefail
 declare -r git_repo="https://github.com/Talend/job2docker.git"
 declare -r work_dir="j2d"
 
-declare -r shared_job_dir="${1:-${HOME}/shared/jobs}"
+declare -r shared_job_dir="${1:-${HOME}/shared_jobs}"
 declare -r root_dir="${2:-${HOME}/talend}"
 
 echo "Starting Talend job2docker install to ${root_dir}"
