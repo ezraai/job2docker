@@ -1,27 +1,4 @@
-# HelloWorld Configuration Files
-
-* [Passing Parameters via Docker Commandline](passing-parameters-via-docker-commandline)
-* [Implicit Context Load from File](implicit-context-load-from-file)
-
-
-## Passing Parameters via Docker Commandline
-
-The docker image has a single entry point using the exec shell style.
-
-    ENTRYPOINT [ "/bin/ash", "/talend/docker_hello_world_0.1/docker_hello_world/docker_hello_world_run.sh" ]
-
-So any command line arguments to the docker run command will be appended to the `hello_world_run.sh` invocation within the container.
-
-Therefore, you can set context variables from the Docker run command using standard Talend syntax.
-The HelloWorld job takes a single context variable parameter named `message`.
-
-````
-docker run ${USER}/docker_hello_world:0.1 --context_param message="Greetings earthling"
-log4j:ERROR Could not connect to remote log4j server at [localhost]. We will try again later.
-Greetings earthling
-````
-
-### Implicit Context Load from File
+# HelloWorld Configuration Files and Implicit Context Load from File
 
 Passing parameters on the command line is handy, but it is not practical when there are lot of parameters.
 A more convenient mechanism is to pass in a single file which in turn holds the parameters.

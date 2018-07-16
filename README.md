@@ -94,7 +94,6 @@ Launch the job2docker_listener from the target directory.
 
 ## Getting Started
 
-* [Job2Docker Design Overview](docs/job2docker-design-overview.md)
 * [Job2Docker HelloWorld](docs/job2docker-hello-world.md)
 * [Job2Docker HelloWorld Config Files](docs/job2docker-hello-world-config-files.md)
 
