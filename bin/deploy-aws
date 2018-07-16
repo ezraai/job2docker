@@ -9,15 +9,26 @@ script_dir="${script_path%/*}"
 #source ../util/util.sh
 source "${script_dir}/../util/util.sh"
 
-declare -r aws_account_id="${1:-115057027035}"
-declare -r aws_region="${2:-us-east-1}"
-declare -r ecr_repo_name="${3:-talend/eost}"
-declare -r app_name="${4:-talend_sample_container_app_v2}"
-declare -r image_version="${5:-0.1.0}"
+declare default_aws_account_id
+default_aws_account_id=$(aws sts get-caller-identity --output text --query 'Account')
+
+declare default_aws_region
+default_aws_region=$(aws configure get region)
+
+declare -r default_ecr_repo_name="${TALEND_JOB2DOCKER_REPO_NAME:-${USER}/talend}"
+
+declare -r app_name="${1:-}"
+declare -r image_version="${2:-0.1}"
+declare -r aws_account_id="${3:-${default_aws_account_id}}"
+declare -r aws_region="${4:-${default_aws_region}}"
+declare -r ecr_repo_name="${5:-${default_ecr_repo_name}}"
+
+required app_name image_version aws_account_id aws_region ecr_repo_name
+
 
 declare ecr_login_command
 ecr_login_command=$(aws ecr get-login --region us-east-1)
-#echo "${ecr_login_command}"
+debugLog "${ecr_login_command}"
 ${ecr_login_command}
 
 declare -r local_docker_user="${USER}"
