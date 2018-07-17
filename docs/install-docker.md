@@ -28,3 +28,11 @@ Test that docker is running
 ````bash
 docker run hello-world
 ````
+
+To automatically start the Docker service on boot with SystemD (Centos)
+
+    sudo systemctl enable docker
+
+With chkconfig
+
+    sudo chkconfig docker on
