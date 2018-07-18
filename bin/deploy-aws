@@ -27,7 +27,7 @@ required app_name image_version aws_account_id aws_region ecr_repo_name
 
 
 declare ecr_login_command
-ecr_login_command=$(aws ecr get-login --region us-east-1)
+ecr_login_command=$(aws ecr get-login --no-include-email --region us-east-1)
 debugLog "${ecr_login_command}"
 ${ecr_login_command}
 
