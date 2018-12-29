@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -e
+set -u
+set -o pipefail
+
+package_script_path=$(readlink -e "${BASH_SOURCE[0]}")
+package_script_dir="${package_script_path%/*}"
+
+#source ../util/util.sh
+source "${package_script_dir}/../util/util.sh"
+
+#source "tcf-package.sh"
+source "${package_script_dir}/tcf-package.sh"
+
+if [ "${1:-}" == "-h" ] || [ "${1:-}" == "--h" ] ; then
+    declare usage="./job2lambda <job_zip_path> [ <job_zip_target_dir> [ <working_dir> ] ]"
+    echo "${usage}"
+    exit
+fi
+
+declare job_zip_path="${1:-}"
+declare job_zip_target_dir="${2:-}"
+declare working_dir="${3:-}"
+
+required job_zip_path
+
+export INFO_LOG=true
+export DEBUG_LOG=true
+
+job_to_lambda "${job_zip_path}" "${job_zip_target_dir}" "${working_dir}"
+
+infoLog "Finished"

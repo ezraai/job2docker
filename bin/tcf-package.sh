@@ -143,6 +143,57 @@ function process_zip() {
 }
 
 
+function lambda_process_zip() {
+
+    local working_dir="${1:-${working_dir:-}}"
+    local job_file_name="${2:-${job_file_name:-}}"
+    local job_file_root="${3:-${job_file_root:-}}"
+    local job_root="${4:-${job_root:-}}"
+    local is_multi_job="${5:-${is_multi_job:-true}}"
+
+    debugVar working_dir
+    debugVar job_file_name
+    debugVar job_file_root
+    debugVar job_root
+    debugVar is_multi_job
+
+    mkdir -p "${working_dir}/${job_file_root}"
+
+    infoLog "Unzipping '${working_dir}/${job_file_name}' to '${working_dir}/${job_file_root}'"
+    unzip -qq -o -d "${working_dir}/${job_file_root}" "${working_dir}/${job_file_name}"
+
+    debugLog "Creating ${working_dir}/${job_file_root}/java"
+    mkdir -p "${working_dir}/${job_file_root}/java"
+    debugLog "moving '${working_dir}/${job_file_root}/lib' to '${working_dir}/${job_file_root}/java/lib'"
+    mv "${working_dir}/${job_file_root}/lib" "${working_dir}/${job_file_root}/java"
+    debugLog "moving jar files from '${working_dir}/${job_file_root}/${job_root}' to '${working_dir}/${job_file_root}/java/lib'"
+    mv ${working_dir}/${job_file_root}/${job_root}/*.jar "${working_dir}/${job_file_root}/java/lib"
+    debugLog "moving resource files from '${working_dir}/${job_file_root}/${job_root}/src/main/resources' to '${working_dir}/${job_file_root}/resources'"
+    mv "${working_dir}/${job_file_root}/${job_root}/src/main/resources" "${working_dir}/${job_file_root}/resources"
+    debugLog "moving '${working_dir}/${job_file_root}/${job_root}/log4j.xml' to ${working_dir}/${job_file_root}/resources/log4j.xml"
+    mv "${working_dir}/${job_file_root}/${job_root}/log4j.xml" "${working_dir}/${job_file_root}/resources/log4j.xml"
+    debugLog "removing target directory '${working_dir}/${job_file_root}/META-INF'"
+    rm -rf "${working_dir}/${job_file_root}/META-INF"
+    debugLog "removing target directory '${working_dir}/${job_file_root}/${job_root}'"
+    rm -rf "${working_dir}/${job_file_root}/${job_root}"
+
+#    debugLog "rename 'jobInfo.properties' to 'jobInfo_${job_root}.properties'"
+#    mv "${working_dir}/${job_file_root}/jobInfo.properties" "${working_dir}/${job_file_root}/jobInfo_${job_root}.properties"
+#    debugLog "rename 'routines.jar' to 'routines_${job_root}.jar'"
+#    mv "${working_dir}/${job_file_root}/lib/routines.jar" "${working_dir}/${job_file_root}/lib/routines_${job_root}.jar"
+#    debugLog "tweak shell script to use 'routines_${job_root}.jar'"
+#    sed -i "s/routines\.jar/routines_${job_root}\.jar/g" "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
+
+# multi-job is addressed above, this is legacy code
+#    [ "${is_multi_job}" == "true" ] && multi_job "${working_dir}" "${job_file_root}" "${job_root}"
+
+#    debugLog "insert exec at beginning of java invocation"
+#    sed -i "s/^java /exec java /g" "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
+#    debugLog "set exec permission since it is not set and is not maintianed by zip format"
+#    chmod +x "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
+}
+
+
 function process_job_entry() {
     debugLog "BEGIN"
 
@@ -240,6 +291,51 @@ function job_to_docker() {
     cp "${job_zip_path}" "${tmp_working_dir}"
 
     process_zip "${tmp_working_dir}" "${job_file_name}" "${job_file_root}" "${job_root}" "false"
+
+    # delete local zip file copy when finished
+    # this needs to occur after zip command since zip does not like the additional file desriptor
+    local working_zip_path_fd
+    exec {working_zip_path_fd}>"${tmp_working_dir}/${job_file_name}"
+    rm "${tmp_working_dir}/${job_file_name}"
+
+    tar -C "${tmp_working_dir}" -zcpf "${tmp_working_dir}/${job_root}.tgz" "${job_file_root}"
+    mv "${tmp_working_dir}/${job_root}.tgz" "${job_zip_target_dir}"
+    infoLog "Dockerized zip file ready in '${job_zip_target_dir}/${job_root}.tgz'"
+
+    # clean up working directory
+    rm -rf "${tmp_working_dir:?}/${job_file_root}"
+}
+
+
+function job_to_lambda() {
+    local job_zip_path="${1:-${job_zip_path:-}}"
+    local job_zip_target_dir="${2:-${job_zip_target_dir:-${PWD}}}"
+    local working_dir="${3:-${working_dir:-}}"
+
+    debugVar job_zip_path
+    debugVar job_zip_target_dir
+    debugVar working_dir
+
+    local job_file_name
+    local job_file_root
+    local job_root
+    local job_root_pattern="_+([0-9])\.+([0-9])*"
+    local tmp_working_dir
+
+    required job_zip_path
+
+    default_working_dir="${working_dir:-${TMPDIR:-${HOME}/tmp/job2lambda}}"
+    mkdir -p "${default_working_dir}"
+    [ ! -w "${default_working_dir}" ] && errorMessage "Working directory '${default_working_dir}' is not writeable" && return 1
+    tmp_working_dir=$(mktemp -d -p "${default_working_dir}" "XXXXXX")
+    debugVar tmp_working_dir
+
+    parse_job_zip_path "${job_zip_path}" "${job_root_pattern}" job_file_name job_file_root job_root
+
+    infoLog "Copying '${job_zip_path}' to working directory '${tmp_working_dir}'"
+    cp "${job_zip_path}" "${tmp_working_dir}"
+
+    lambda_process_zip "${tmp_working_dir}" "${job_file_name}" "${job_file_root}" "${job_root}" "false"
 
     # delete local zip file copy when finished
     # this needs to occur after zip command since zip does not like the additional file desriptor
