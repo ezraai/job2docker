@@ -13,7 +13,7 @@ source "${package_script_dir}/../util/util.sh"
 #source "tcf-package.sh"
 source "${package_script_dir}/tcf-package.sh"
 
-if [ "${1:-}" == "-h" ] || [ "${1:-}" == "--h" ] ; then
+if [ "${1:-}" == "-h" ] || [ "${1:-}" == "--h" ] || [ "${1:-}" == "-help" ] || [ "${1:-}" == "--help" ] || [ "${1:-}" == "-?" ] ; then
     declare usage="./job2lambda <job_zip_path> [ <job_zip_target_dir> [ <working_dir> ] ]"
     echo "${usage}"
     exit

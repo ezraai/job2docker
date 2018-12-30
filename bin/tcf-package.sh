@@ -164,23 +164,31 @@ function lambda_process_zip() {
 
     debugLog "Creating ${working_dir}/${job_file_root}/java"
     mkdir -p "${working_dir}/${job_file_root}/java"
+
     debugLog "moving '${working_dir}/${job_file_root}/lib' to '${working_dir}/${job_file_root}/java/lib'"
     mv "${working_dir}/${job_file_root}/lib" "${working_dir}/${job_file_root}/java"
+
     debugLog "moving jar files from '${working_dir}/${job_file_root}/${job_root}' to '${working_dir}/${job_file_root}/java/lib'"
     mv ${working_dir}/${job_file_root}/${job_root}/*.jar "${working_dir}/${job_file_root}/java/lib"
-    debugLog "moving resource files from '${working_dir}/${job_file_root}/${job_root}/src/main/resources' to '${working_dir}/${job_file_root}/resources'"
-    mv "${working_dir}/${job_file_root}/${job_root}/src/main/resources" "${working_dir}/${job_file_root}/resources"
-    debugLog "moving '${working_dir}/${job_file_root}/${job_root}/log4j.xml' to ${working_dir}/${job_file_root}/resources/log4j.xml"
-    mv "${working_dir}/${job_file_root}/${job_root}/log4j.xml" "${working_dir}/${job_file_root}/resources/log4j.xml"
+
+    debugLog "moving resource files from '${working_dir}/${job_file_root}/${job_root}/src/main/resources' to '${working_dir}/${job_file_root}/java/lib'"
+    mv ${working_dir}/${job_file_root}/${job_root}/src/main/resources/* "${working_dir}/${job_file_root}/java/lib"
+
+    debugLog "moving '${working_dir}/${job_file_root}/${job_root}/log4j.xml' to ${working_dir}/${job_file_root}/java/lib/log4j.xml"
+    mv "${working_dir}/${job_file_root}/${job_root}/log4j.xml" "${working_dir}/${job_file_root}/java/lib/log4j.xml"
+
     debugLog "removing target directory '${working_dir}/${job_file_root}/META-INF'"
     rm -rf "${working_dir}/${job_file_root}/META-INF"
+
     debugLog "removing target directory '${working_dir}/${job_file_root}/${job_root}'"
     rm -rf "${working_dir}/${job_file_root}/${job_root}"
 
 #    debugLog "rename 'jobInfo.properties' to 'jobInfo_${job_root}.properties'"
 #    mv "${working_dir}/${job_file_root}/jobInfo.properties" "${working_dir}/${job_file_root}/jobInfo_${job_root}.properties"
+
 #    debugLog "rename 'routines.jar' to 'routines_${job_root}.jar'"
 #    mv "${working_dir}/${job_file_root}/lib/routines.jar" "${working_dir}/${job_file_root}/lib/routines_${job_root}.jar"
+
 #    debugLog "tweak shell script to use 'routines_${job_root}.jar'"
 #    sed -i "s/routines\.jar/routines_${job_root}\.jar/g" "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
 
@@ -189,6 +197,7 @@ function lambda_process_zip() {
 
 #    debugLog "insert exec at beginning of java invocation"
 #    sed -i "s/^java /exec java /g" "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
+
 #    debugLog "set exec permission since it is not set and is not maintianed by zip format"
 #    chmod +x "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
 }
@@ -343,9 +352,21 @@ function job_to_lambda() {
     exec {working_zip_path_fd}>"${tmp_working_dir}/${job_file_name}"
     rm "${tmp_working_dir}/${job_file_name}"
 
-    tar -C "${tmp_working_dir}" -zcpf "${tmp_working_dir}/${job_root}.tgz" "${job_file_root}"
-    mv "${tmp_working_dir}/${job_root}.tgz" "${job_zip_target_dir}"
-    infoLog "Dockerized zip file ready in '${job_zip_target_dir}/${job_root}.tgz'"
+# use tar for docker processing
+#    tar -C "${tmp_working_dir}" -zcpf "${tmp_working_dir}/${job_root}.tgz" "${job_file_root}"
+#    mv "${tmp_working_dir}/${job_root}.tgz" "${job_zip_target_dir}"
+#    infoLog "Dockerized zip file ready in '${job_zip_target_dir}/${job_root}.tgz'"
+
+# use zip for lambda layers
+    debugLog "zipping '${tmp_working_dir}/${job_file_root}' to '${tmp_working_dir}/${job_root}.zip'"
+    current_dir="${PWD}"
+    cd "${tmp_working_dir}/${job_file_root}"
+    debugLog "current directory: ${PWD}"
+    debugLog "directory content: $(ls)"
+    debugLog "executing: zip -r \"${job_zip_target_dir}/${job_root}.zip\" * > /dev/null"
+    zip -r "${job_zip_target_dir}/${job_root}.zip" * > /dev/null
+    cd "${current_dir}"
+    infoLog "Lambda layer zip file ready in '${job_zip_target_dir}/${job_root}.zip'"
 
     # clean up working directory
     rm -rf "${tmp_working_dir:?}/${job_file_root}"

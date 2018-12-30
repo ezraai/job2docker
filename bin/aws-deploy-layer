@@ -1,0 +1,17 @@
+jobName="TalendLambdaJobExample"
+layerBucket="lambda.eost.talend.com"
+
+#aws lambda publish-layer-version \
+#    --layer-name "${jobName}" \
+#    --description "Talend Lambda job example" \
+#    --license-info "MIT" \
+#    --zip-file "fileb:///home/eost/lambda/TalendLambdaJobExample.zip" \
+#    --content "S3Bucket=${layerBucket},S3Key=${jobName}.zip" \
+#    --compatible-runtimes "java8"
+
+aws lambda publish-layer-version \
+    --layer-name "${jobName}" \
+    --description "Talend Lambda job example" \
+    --license-info "MIT" \
+    --compatible-runtimes "java8" \
+    --zip-file "fileb:///home/eost/lambda/TalendLambdaJobExample.zip"
