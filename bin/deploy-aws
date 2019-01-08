@@ -23,8 +23,15 @@ declare -r aws_account_id="${3:-${default_aws_account_id}}"
 declare -r aws_region="${4:-${default_aws_region}}"
 declare -r ecr_repo_name="${5:-${default_ecr_repo_name}}"
 
+if [ "${1:-}" == "-h" ] || [ "${1:-}" == "--h" ] || [ "${1:-}" == "-help" ] || [ "${1:-}" == "--help" ] || [ "${1:-}" == "-?" ]; then
+    declare usage="./deploy-aws app_name [version] [aws_account_id] [aws_region] [ecr_repo]"
+    echo "${usage}"
+    exit
+fi
+
 required app_name image_version aws_account_id aws_region ecr_repo_name
 
+INFO_LOG=true
 
 declare ecr_login_command
 ecr_login_command=$(aws ecr get-login --no-include-email --region us-east-1)
@@ -42,5 +49,10 @@ else
 fi
 
 
-docker tag "${local_docker_user}/${app_name}:${image_version}" "${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com/${ecr_repo_name}/${app_name}:${image_version}"
+#infoLog "docker tag ${local_docker_user}/${app_name}:${image_version} ${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com/${ecr_repo_name}/${app_name}:${image_version}"
+#docker tag "${local_docker_user}/${app_name}:${image_version}" "${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com/${ecr_repo_name}/${app_name}:${image_version}"
+infoLog "docker tag ${app_name}:${image_version} ${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com/${ecr_repo_name}/${app_name}:${image_version}"
+docker tag "${app_name}:${image_version}" "${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com/${ecr_repo_name}/${app_name}:${image_version}"
+
+infoLog "docker push ${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com/${ecr_repo_name}/${app_name}:${image_version}"
 docker push "${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com/${ecr_repo_name}/${app_name}:${image_version}"

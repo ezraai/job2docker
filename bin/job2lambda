@@ -4,14 +4,14 @@ set -e
 set -u
 set -o pipefail
 
-package_script_path=$(readlink -e "${BASH_SOURCE[0]}")
-package_script_dir="${package_script_path%/*}"
+job2lambda_path=$(readlink -e "${BASH_SOURCE[0]}")
+job2lambda_dir="${job2lambda_path%/*}"
 
 #source ../util/util.sh
-source "${package_script_dir}/../util/util.sh"
+source "${job2lambda_dir}/../util/util.sh"
 
 #source "tcf-package.sh"
-source "${package_script_dir}/tcf-package.sh"
+source "${job2lambda_dir}/tcf-package.sh"
 
 if [ "${1:-}" == "-h" ] || [ "${1:-}" == "--h" ] || [ "${1:-}" == "-help" ] || [ "${1:-}" == "--help" ] || [ "${1:-}" == "-?" ] ; then
     declare usage="./job2lambda <job_zip_path> [ <job_zip_target_dir> [ <working_dir> ] ]"

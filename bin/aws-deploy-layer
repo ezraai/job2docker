@@ -1,17 +1,57 @@
-jobName="TalendLambdaJobExample"
-layerBucket="lambda.eost.talend.com"
+#!/usr/bin/env bash
+
+set -e
+set -u
+set -o pipefail
+
+aws_deploy_layer_path=$(readlink -e "${BASH_SOURCE[0]}")
+aws_deploy_layer_dir="${aws_deploy_layer_path%/*}"
+
+#source ../util/util.sh
+source "${aws_deploy_layer_dir}/../util/util.sh"
+
+if [ "${1:-}" == "-h" ] || [ "${1:-}" == "--h" ] || [ "${1:-}" == "-help" ] || [ "${1:-}" == "--help" ] || [ "${1:-}" == "-?" ] ; then
+    declare usage="./aws-deploy-layer <jobZipFile>"
+    echo "${usage}"
+    exit
+fi
+
+declare jobZipFile="${1:-/home/eost/lambda/TalendLambdaJobExample.zip}"
+
+declare jobZipFile_name="${jobZipFile##*/}"
+declare jobZipFile_root="${jobZipFile_name%.*}"
+
+declare layerName="${jobZipFile_root}"
+
+echo "Deploying ${jobZipFile} to AWS Lambda Layer ${layerName}"
+
+# bucket option for publish-layer-version is an alternative when the zip file has already been loaded to a bucket.
+# In our case the file is still local.
+# Presumably when the bucket is provided we also manage the lifecycle of the layer asset.
+# Using the current approach AWS will manage the layer asset's lifecycle.
+#declare layerBucket=${3:-"lambda.eost.talend.com"}
+
+required jobZipFile layerName
+#layerBucket
 
 #aws lambda publish-layer-version \
-#    --layer-name "${jobName}" \
+#    --layer-name "${layerName}" \
 #    --description "Talend Lambda job example" \
 #    --license-info "MIT" \
 #    --zip-file "fileb:///home/eost/lambda/TalendLambdaJobExample.zip" \
-#    --content "S3Bucket=${layerBucket},S3Key=${jobName}.zip" \
+#    --content "S3Bucket=${layerBucket},S3Key=${layerName}.zip" \
 #    --compatible-runtimes "java8"
 
+#aws lambda publish-layer-version \
+#    --layer-name "${layerName}" \
+#    --description "Talend Lambda job example" \
+#    --license-info "MIT" \
+#    --compatible-runtimes "java8" \
+#    --zip-file "fileb:///home/eost/lambda/TalendLambdaJobExample.zip"
+
 aws lambda publish-layer-version \
-    --layer-name "${jobName}" \
+    --layer-name "${layerName}" \
     --description "Talend Lambda job example" \
     --license-info "MIT" \
     --compatible-runtimes "java8" \
-    --zip-file "fileb:///home/eost/lambda/TalendLambdaJobExample.zip"
+    --zip-file "fileb://${jobZipFile}"
