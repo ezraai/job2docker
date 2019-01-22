@@ -171,17 +171,37 @@ function lambda_process_zip() {
     debugLog "moving jar files from '${working_dir}/${job_file_root}/${job_root}' to '${working_dir}/${job_file_root}/java/lib'"
     mv ${working_dir}/${job_file_root}/${job_root}/*.jar "${working_dir}/${job_file_root}/java/lib"
 
-    debugLog "moving resource files from '${working_dir}/${job_file_root}/${job_root}/src/main/resources' to '${working_dir}/${job_file_root}/java/lib'"
-    mv ${working_dir}/${job_file_root}/${job_root}/src/main/resources/* "${working_dir}/${job_file_root}/java/lib"
+#
+#    debugLog "moving context files from '${working_dir}/${job_file_root}/${job_root}/src/main/resources' to '${working_dir}/${job_file_root}/java/lib'"
+#    mv ${working_dir}/${job_file_root}/${job_root}/src/main/resources/* "${working_dir}/${job_file_root}/java/lib"
+#
+# instead just delete src and items and then copy everything else
+#
+    debugLog "removing src directory '${working_dir}/${job_file_root}/${job_root}/src'"
+    rm -rf '${working_dir}/${job_file_root}/${job_root}/src'
+    debugLog "removing items directory '${working_dir}/${job_file_root}/${job_root}/items'"
+    rm -rf '${working_dir}/${job_file_root}/${job_root}/items'
+    debugLog "moving all directories and files from '${working_dir}/${job_file_root}/${job_root}' to '${working_dir}/${job_file_root}/java/lib'"
+    mv ${working_dir}/${job_file_root}/${job_root}/* "${working_dir}/${job_file_root}/java/lib"
 
-    debugLog "moving '${working_dir}/${job_file_root}/${job_root}/log4j.xml' to ${working_dir}/${job_file_root}/java/lib/log4j.xml"
-    mv "${working_dir}/${job_file_root}/${job_root}/log4j.xml" "${working_dir}/${job_file_root}/java/lib/log4j.xml"
 
-    debugLog "removing target directory '${working_dir}/${job_file_root}/META-INF'"
-    rm -rf "${working_dir}/${job_file_root}/META-INF"
+#    debugLog "moving resource files from '${working_dir}/${job_file_root}/${job_root}/src/main/resources' to '${working_dir}/${job_file_root}/java/lib'"
+#    mv ${working_dir}/${job_file_root}/${job_root}/src/main/resources/* "${working_dir}/${job_file_root}/java/lib"
 
-    debugLog "removing target directory '${working_dir}/${job_file_root}/${job_root}'"
-    rm -rf "${working_dir}/${job_file_root}/${job_root}"
+# no longer necessary since all files are moved
+# also note that this is a potential collision point if multiple jobs are moved to same lambda
+#    debugLog "moving log4j config from '${working_dir}/${job_file_root}/${job_root}/log4j.xml' to ${working_dir}/${job_file_root}/java/lib/log4j.xml"
+#    mv "${working_dir}/${job_file_root}/${job_root}/log4j.xml" "${working_dir}/${job_file_root}/java/lib/log4j.xml"
+
+# temp disabled
+#    debugLog "removing target directory '${working_dir}/${job_file_root}/META-INF'"
+#    rm -rf "${working_dir}/${job_file_root}/META-INF"
+
+# temp disabled
+#    debugLog "removing target directory '${working_dir}/${job_file_root}/${job_root}'"
+#    rm -rf "${working_dir}/${job_file_root}/${job_root}"
+
+
 
 #    debugLog "rename 'jobInfo.properties' to 'jobInfo_${job_root}.properties'"
 #    mv "${working_dir}/${job_file_root}/jobInfo.properties" "${working_dir}/${job_file_root}/jobInfo_${job_root}.properties"
@@ -350,7 +370,7 @@ function job_to_lambda() {
     # this needs to occur after zip command since zip does not like the additional file desriptor
     local working_zip_path_fd
     exec {working_zip_path_fd}>"${tmp_working_dir}/${job_file_name}"
-    rm "${tmp_working_dir}/${job_file_name}"
+#    rm "${tmp_working_dir}/${job_file_name}"
 
 # use tar for docker processing
 #    tar -C "${tmp_working_dir}" -zcpf "${tmp_working_dir}/${job_root}.tgz" "${job_file_root}"
@@ -369,7 +389,7 @@ function job_to_lambda() {
     infoLog "Lambda layer zip file ready in '${job_zip_target_dir}/${job_root}.zip'"
 
     # clean up working directory
-    rm -rf "${tmp_working_dir:?}/${job_file_root}"
+#    rm -rf "${tmp_working_dir:?}/${job_file_root}"
 }
 
 
