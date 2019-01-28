@@ -180,9 +180,6 @@ function lambda_process_zip() {
     rm -rf "${working_dir}/${job_file_root}/${job_root}/items"
     debugLog "moving all directories and files from '${working_dir}/${job_file_root}/${job_root}' to '${working_dir}/${job_file_root}/java/lib'"
     mv ${working_dir}/${job_file_root}/${job_root}/* "${working_dir}/${job_file_root}/java/lib"
-    
-    debugLog "setting execute permission for shell scripts in '${working_dir}/${job_file_root}/java/lib'"
-    find "${working_dir}/${job_file_root}/java/lib" -type f -iname "*.sh" -exec chmod +x {} \;
 
 # temp disabled
 #    debugLog "removing target directory '${working_dir}/${job_file_root}/META-INF'"
@@ -371,7 +368,7 @@ function job_to_lambda() {
 #    infoLog "Dockerized zip file ready in '${job_zip_target_dir}/${job_root}.tgz'"
 
 # use zip for lambda layers
-    debugLog "zipping content of directory '${tmp_working_dir}/${job_file_root}' to '${job_zip_target_dir}/${job_file_root}.zip'"
+    debugLog "zipping '${tmp_working_dir}/${job_file_root}' to '${tmp_working_dir}/${job_root}.zip'"
     current_dir="${PWD}"
     cd "${tmp_working_dir}/${job_file_root}"
     debugLog "current directory: ${PWD}"

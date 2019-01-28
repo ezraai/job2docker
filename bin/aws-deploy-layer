@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+#
+# wrapper for aws lambda publish-layer-version
+#
+# derives layer name from s3 file
+#
+
 set -e
 set -u
 set -o pipefail
@@ -8,50 +14,64 @@ aws_deploy_layer_path=$(readlink -e "${BASH_SOURCE[0]}")
 aws_deploy_layer_dir="${aws_deploy_layer_path%/*}"
 
 #source ../util/util.sh
-source "${aws_deploy_layer_dir}/../util/util.sh"
+source "${aws_deploy_layer_dir}/util_0.1.sh"
+
+export INFO_LOG=true
+export DEBUG_LOG=true
 
 if [ "${1:-}" == "-h" ] || [ "${1:-}" == "--h" ] || [ "${1:-}" == "-help" ] || [ "${1:-}" == "--help" ] || [ "${1:-}" == "-?" ] ; then
-    declare usage="./aws-deploy-layer <jobZipFile>"
+    declare usage="./aws-deploy-layer <layerBucket> <jobS3Key> [ <layerName> [ <description> [ <license> ] ] ]"
     echo "${usage}"
     exit
 fi
 
-declare jobZipFile="${1:-/home/eost/lambda/TalendLambdaJobExample.zip}"
+declare layerBucket="${1:-}"
 
-declare jobZipFile_name="${jobZipFile##*/}"
-declare jobZipFile_root="${jobZipFile_name%.*}"
+declare jobS3Key="${2:-}"
 
-declare layerName="${jobZipFile_root}"
+required layerBucket jobS3Key
 
-echo "Deploying ${jobZipFile} to AWS Lambda Layer ${layerName}"
+declare jobS3Key_name="${jobS3Key##*/}"
+declare jobS3Key_root="${jobS3Key_name%.*}"
 
-# bucket option for publish-layer-version is an alternative when the zip file has already been loaded to a bucket.
-# In our case the file is still local.
-# Presumably when the bucket is provided we also manage the lifecycle of the layer asset.
-# Using the current approach AWS will manage the layer asset's lifecycle.
-#declare layerBucket=${3:-"lambda.eost.talend.com"}
+declare extglob_save
+extglob_save=$(shopt -p extglob || true )
 
-required jobZipFile layerName
-#layerBucket
+shopt -s extglob
 
-#aws lambda publish-layer-version \
-#    --layer-name "${layerName}" \
-#    --description "Talend Lambda job example" \
-#    --license-info "MIT" \
-#    --zip-file "fileb:///home/eost/lambda/TalendLambdaJobExample.zip" \
-#    --content "S3Bucket=${layerBucket},S3Key=${layerName}.zip" \
-#    --compatible-runtimes "java8"
+declare job_root_pattern="-+([0-9])\.+([0-9])\.+([0-9])*"
+declare layerDefault="${jobS3Key_root/%${job_root_pattern}}"
 
-#aws lambda publish-layer-version \
-#    --layer-name "${layerName}" \
-#    --description "Talend Lambda job example" \
-#    --license-info "MIT" \
-#    --compatible-runtimes "java8" \
-#    --zip-file "fileb:///home/eost/lambda/TalendLambdaJobExample.zip"
+eval "${extglob_save}"
+
+declare layerName="${3:-${layerDefault}}"
+required layerName
+
+declare description="${4:-no description provided}"
+declare license="${5:-no license specified}"
+
+echo "Deploying ${jobS3Key} to AWS Lambda Layer ${layerName}"
+
+debugVar jobS3Key
+debugVar layerName
+
+cat <<EOF
+
+executing:
 
 aws lambda publish-layer-version \
     --layer-name "${layerName}" \
-    --description "Talend Lambda job example" \
-    --license-info "MIT" \
+    --description "${description}" \
+    --license-info "${license}" \
     --compatible-runtimes "java8" \
-    --zip-file "fileb://${jobZipFile}"
+    --content "S3Bucket=${layerBucket},S3Key=${jobS3Key}"
+
+EOF
+
+aws lambda publish-layer-version \
+    --layer-name "${layerName}" \
+    --description "${description}" \
+    --license-info "${license}" \
+    --compatible-runtimes "java8" \
+    --content "S3Bucket=${layerBucket},S3Key=${jobS3Key}"
+
