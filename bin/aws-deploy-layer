@@ -13,8 +13,9 @@ set -o pipefail
 aws_deploy_layer_path=$(readlink -e "${BASH_SOURCE[0]}")
 aws_deploy_layer_dir="${aws_deploy_layer_path%/*}"
 
-#source ../util/util.sh
-source "${aws_deploy_layer_dir}/util_0.1.sh"
+source "${aws_deploy_layer_dir}/tcf-env.sh"
+
+source "${aws_deploy_layer_dir}/${UTIL_RELATIVE_PATH}util${RESOURCE_VERSION}.sh"
 
 export INFO_LOG=true
 export DEBUG_LOG=true
@@ -22,6 +23,7 @@ export DEBUG_LOG=true
 if [ "${1:-}" == "-h" ] || [ "${1:-}" == "--h" ] || [ "${1:-}" == "-help" ] || [ "${1:-}" == "--help" ] || [ "${1:-}" == "-?" ] ; then
     declare usage="./aws-deploy-layer <layerBucket> <jobS3Key> [ <layerName> [ <description> [ <license> ] ] ]"
     echo "${usage}"
+    echo "deploy a previously job2lambda processed Talend Job zip file from an s3 bucket as an AWS Lambda Layer"
     exit
 fi
 

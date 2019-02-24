@@ -4,17 +4,17 @@
 
 export TCF_PACKAGE_FLAG=1
 
+set -e
 set -u
+
 
 tcf_package_script_path=$(readlink -e "${BASH_SOURCE[0]}")
 tcf_package_script_dir="${tcf_package_script_path%/*}"
 
-source "${tcf_package_script_dir}/tcf-env.sh"
-
-source "${tcf_package_script_dir}/${UTIL_RELATIVE_PATH}util${RESOURCE_VERSION}.sh"
-source "${tcf_package_script_dir}/${UTIL_RELATIVE_PATH}url-util${RESOURCE_VERSION}.sh"
-source "${tcf_package_script_dir}/${UTIL_RELATIVE_PATH}file-util${RESOURCE_VERSION}.sh"
-source "${tcf_package_script_dir}/${UTIL_RELATIVE_PATH}array-util${RESOURCE_VERSION}.sh"
+source "${tcf_package_script_dir}/util_0.1.sh"
+source "${tcf_package_script_dir}/url_0.1.sh"
+source "${tcf_package_script_dir}/file-util_0.1.sh"
+source "${tcf_package_script_dir}/array-util_0.1.sh"
 
 
 function help() {
@@ -329,17 +329,14 @@ function job_to_lambda() {
     local job_zip_path="${1:-${job_zip_path:-}}"
     local job_zip_target_dir="${2:-${job_zip_target_dir:-${PWD}}}"
     local working_dir="${3:-${working_dir:-}}"
-    local job_file_name="${4:-${job_file_name:-}}"
-    local job_file_root="${5:-${job_file_root:-}}"
-    local job_root="${6:-${job_root:-}}"
 
     debugVar job_zip_path
     debugVar job_zip_target_dir
     debugVar working_dir
-    debugVar job_file_name
-    debugVar job_file_root
-    debugVar job_root
 
+    local job_file_name
+    local job_file_root
+    local job_root
     local job_root_pattern="-+([0-9])\.+([0-9])\.+([0-9])*"
     local tmp_working_dir
 
@@ -350,6 +347,12 @@ function job_to_lambda() {
     [ ! -w "${default_working_dir}" ] && errorMessage "Working directory '${default_working_dir}' is not writeable" && return 1
     tmp_working_dir=$(mktemp -d -p "${default_working_dir}" "XXXXXX")
     debugVar tmp_working_dir
+
+    parse_job_zip_path "${job_zip_path}" "${job_root_pattern}" job_file_name job_file_root job_root
+
+    debugVar job_file_name
+    debugVar job_file_root
+    debugVar job_root
 
     infoLog "Copying '${job_zip_path}' to working directory '${tmp_working_dir}'"
     cp "${job_zip_path}" "${tmp_working_dir}"
@@ -367,34 +370,14 @@ function job_to_lambda() {
 #    mv "${tmp_working_dir}/${job_root}.tgz" "${job_zip_target_dir}"
 #    infoLog "Dockerized zip file ready in '${job_zip_target_dir}/${job_root}.tgz'"
 
-
-declare zip_command
-which zip
-if [ $? -ne 0 ]; then
-   zip_command="/opt/usr/bin/zip"
-   ls -al /opt/usr/bin/zip
-   chmod +x /opt/usr/bin/zip
-else
-   zip_command="zip"
-fi
-debugLog "zip_command=${zip_command}"
-
 # use zip for lambda layers
     debugLog "zipping content of directory '${tmp_working_dir}/${job_file_root}' to '${job_zip_target_dir}/${job_file_root}.zip'"
     current_dir="${PWD}"
     cd "${tmp_working_dir}/${job_file_root}"
     debugLog "current directory: ${PWD}"
     debugLog "directory content: $(ls)"
-    debugLog "target zip directory: $(ls ${job_zip_target_dir}/${job_file_root}.zip)"
-    touch 
-    debugLog "target zip directory: $(ls ${job_zip_target_dir}/${job_file_root}.zip)"
-    debugLog "executing: ${zip_command} -r \"${job_zip_target_dir}/${job_file_root}.zip\" ./* > /dev/null"
-    "${zip_command}" -r "${job_zip_target_dir}/${job_file_root}.zip" ./* 1>&2
-    if [ -f "${job_zip_target_dir}/${job_file_root}.zip" ]; then
-        debugLog "'${job_zip_target_dir}/${job_file_root}.zip' EXISTS"
-    else
-        debugLog "'${job_zip_target_dir}/${job_file_root}.zip' DOES NOT EXIST"
-    fi
+    debugLog "executing: zip -r \"${job_zip_target_dir}/${job_file_root}.zip\" * > /dev/null"
+    zip -r "${job_zip_target_dir}/${job_file_root}.zip" ./* > /dev/null
     cd "${current_dir}"
     infoLog "Lambda layer zip file ready in '${job_zip_target_dir}/${job_file_root}.zip'"
 

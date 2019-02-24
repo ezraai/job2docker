@@ -154,4 +154,3 @@ export -f assign
 export -f trap_add
 
 debugLog "sourced: util.sh"
-

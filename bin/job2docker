@@ -4,14 +4,15 @@ set -e
 set -u
 set -o pipefail
 
-package_script_path=$(readlink -e "${BASH_SOURCE[0]}")
-package_script_dir="${package_script_path%/*}"
+job2docker_script_path=$(readlink -e "${BASH_SOURCE[0]}")
+job2docker_script_dir="${job2docker_script_path%/*}"
 
-#source ../util/util.sh
-source "${package_script_dir}/../util/util.sh"
+source "${job2docker_script_dir}/tcf-env.sh"
 
-#source "tcf-package.sh"
-source "${package_script_dir}/tcf-package.sh"
+source "${job2docker_script_dir}/${UTIL_RELATIVE_PATH}util${RESOURCE_VERSION}.sh"
+
+source "${job2docker_script_dir}/tcf-package${RESOURCE_VERSION}.sh"
+
 
 if [ "${1:-}" == "-h" ] || [ "${1:-}" == "--h" ] ; then
     declare usage="./job2docker <job_zip_path> [ <job_zip_target_dir> [ <working_dir> ] ]"

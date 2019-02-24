@@ -3,11 +3,12 @@
 set -e
 set -u
 
-script_path=$(readlink -e "${BASH_SOURCE[0]}")
-script_dir="${script_path%/*}"
+deploy_aws_script_path=$(readlink -e "${BASH_SOURCE[0]}")
+deploy_aws_script_dir="${deploy_aws_script_path%/*}"
 
-#source ../util/util.sh
-source "${script_dir}/../util/util.sh"
+source "${deploy_aws_script_dir}/tcf-env.sh"
+
+source "${deploy_aws_script_dir}/${UTIL_RELATIVE_PATH}util${RESOURCE_VERSION}.sh"
 
 declare default_aws_account_id
 default_aws_account_id=$(aws sts get-caller-identity --output text --query 'Account')
