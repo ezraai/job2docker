@@ -55,11 +55,19 @@ echo "Deploying ${jobS3Key} to AWS Lambda Layer ${layerName}"
 debugVar jobS3Key
 debugVar layerName
 
+declare aws_command
+which aws
+if [ $? -ne 0 ]; then
+   aws_command="/opt/java/lib/lambda-aws-cli/aws"
+else
+   aws_command="aws"
+fi
+
 cat <<EOF
 
 executing:
 
-aws lambda publish-layer-version \
+${aws_command} lambda publish-layer-version \
     --layer-name "${layerName}" \
     --description "${description}" \
     --license-info "${license}" \
@@ -68,7 +76,8 @@ aws lambda publish-layer-version \
 
 EOF
 
-aws lambda publish-layer-version \
+
+${aws_command} lambda publish-layer-version \
     --layer-name "${layerName}" \
     --description "${description}" \
     --license-info "${license}" \
