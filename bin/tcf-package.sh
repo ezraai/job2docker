@@ -385,9 +385,7 @@ debugLog "zip_command=${zip_command}"
     cd "${tmp_working_dir}/${job_file_root}"
     debugLog "current directory: ${PWD}"
     debugLog "directory content: $(ls)"
-    debugLog "target zip directory: $(ls ${job_zip_target_dir}/${job_file_root}.zip)"
-    touch 
-    debugLog "target zip directory: $(ls ${job_zip_target_dir}/${job_file_root}.zip)"
+#    debugLog "target zip directory: $(ls ${job_zip_target_dir}/${job_file_root}.zip)"
     debugLog "executing: ${zip_command} -r \"${job_zip_target_dir}/${job_file_root}.zip\" ./* > /dev/null"
     "${zip_command}" -r "${job_zip_target_dir}/${job_file_root}.zip" ./* 1>&2
     if [ -f "${job_zip_target_dir}/${job_file_root}.zip" ]; then
