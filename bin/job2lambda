@@ -15,8 +15,40 @@ source "${job2lambda_dir}/${UTIL_RELATIVE_PATH}util${RESOURCE_VERSION}.sh"
 #source "tcf-package.sh"
 source "${job2lambda_dir}/tcf-package${RESOURCE_VERSION}.sh"
 
+define usage <<EOF
+Repackage a standard Talend job zip file as a Layer and publish to AWS Lambda using the aws lambda publish-layer-version command.
+
+See https://docs.aws.amazon.com/cli/latest/reference/lambda/publish-layer-version.html
+
+./job2lambda <s3_bucket> <job_zip_path> [ <job_zip_target_dir> [ <working_dir> [ <description> [ <license> ] ] ] ]
+
+s3_bucket:    s3 bucket where lambda layer will be stored 
+job_zip_path: the path to the talend job zip file
+
+The Talend job zip file located at job_zip_path is unzipped and modified in the working_dir.
+The packaged job layer file is stored in the job_zip_target_dir before being copied to s3_bucket.
+The description and license parameters are passed along with the s3 zip file location to the Lambda Layer service.
+
+Talend Job naming conventions result in the job_zip_path file name being something like
+
+    <job_root>_<job_version>.zip
+
+Note that the Talend job version does not necessarily match the git version.
+The Talend version may be set in the Job properties.
+
+The job will be published to the s3_bucket in a folder named <job_root>.
+For example, the local job zip file
+    mypath/Spring_Resources_RDS_0.1.zip 
+would be published to 
+    s3://eost-lambda/Spring_Resources_RDS/Spring_Resources_RDS_0.1.zip
+
+Note that publishing a Job layer will result in overwriting the S3 target each time.
+This is fine since the s3 target is just a staging location.
+AWS Lambda automatically versions all Layers.
+
+EOF
+
 if [ "${1:-}" == "-h" ] || [ "${1:-}" == "--h" ] || [ "${1:-}" == "-help" ] || [ "${1:-}" == "--help" ] || [ "${1:-}" == "-?" ] ; then
-    declare usage="./job2lambda <s3_bucket> <job_zip_path> [ <job_zip_target_dir> [ <working_dir> [ <description> [ <license> ] ] ] ]"
     echo "${usage}"
     exit
 fi
@@ -81,13 +113,16 @@ ${aws_command} lambda publish-layer-version \
 EOF
 
 
-${aws_command} lambda publish-layer-version \
+declare layer_version_arn
+
+layer_version_arn=(${aws_command} lambda publish-layer-version \
     --layer-name "${job_root}" \
     --description "${description}" \
     --license-info "${license}" \
     --compatible-runtimes "java8" \
-    --content "S3Bucket=${s3_bucket},S3Key=${job_root}/${job_file_name}"
+    --content "S3Bucket=${s3_bucket},S3Key=${job_root}/${job_file_name}") > job2lambda.out
 
+cat job2lambda.out | jq .LayerVersionArn
 
 infoLog "Finished"
 
