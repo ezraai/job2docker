@@ -23,3 +23,6 @@ hs_err_pid*
 
 # allow zip files in the jobs directory
 !jobs/*.zip
+
+# allow jar files in the lib directory, used for the talend job handler
+!lib/*.jar

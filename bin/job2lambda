@@ -97,7 +97,10 @@ Note that the logical resource id uses neither hyphens nor underscores.
 If you run this script multiple times for the same job, each run will have a different local working directory as well as S3 files created.
 So nothing will be overwritten or have collisions.
 Each run of this script will result in the creation of a new Layer that will be referenced by the Lambda Function.
-So it will update the existing Lambda rather than create a new Lambda.
+So it will update the existing Lambda rather than create a new Lambda, but the Layers will still be there.
+The historic linkage between a Layer and the zip file in the s3 bucket is captured in the consolidated configuration log <job_root>_config.log.
+The sam_project_id property has the locally generated uuid.
+The talend_job_layer_version_arn property has the specific Layer ARN.
 
 EOF
 
