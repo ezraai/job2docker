@@ -20,24 +20,46 @@ Repackage a standard Talend job zip file as a Layer and publish to AWS Lambda us
 
 See https://docs.aws.amazon.com/cli/latest/reference/lambda/publish-layer-version.html
 
-./job2lambda <s3_bucket> <job_zip_path> [ <job_zip_target_dir> [ <working_dir> [ <description> [ <license> ] [ <stack_name> [ <template_file_path> ] ] ] ] ] ]
+Usage
 
-s3_bucket:          s3 bucket where lambda layer will be stored 
-job_zip_path:       the path to the talend job zip file
-job_zip_target_dir: defaults to the current working directory
-working_dir:        defaults to the environment variable TALEND_JOB2LAMBDA_WORKING_DIR
-                    If TALEND_JOB2LAMBDA_WORKING_DIR is not set defaults to HOME/tmp/job2lambda
-stack_name:         defaults to the derived job_root variable
-template_file_path: defaults to job_lambda_template.yaml in the current working directory.
-                    If no job_lambda_template.yaml file is found, then the job_lambda_template.yaml in the job2lambda/config directory will be used.
-                    If neither of those files is found, then the default here document in this bash script is used.
+    ./job2lambda <s3_bucket> <job_zip_path> [ <job_zip_target_dir> [ <working_dir> [ <description> [ <license> ] [ <stack_name> [ <template_file_path> [ <lambda_config_path> [ <job_config_path> ] ] ] ] ] ] ] ]
+
+        s3_bucket:          s3 bucket where lambda layer will be stored 
+        job_zip_path:       the path to the talend job zip file
+        job_zip_target_dir: defaults to the current working directory
+        working_dir:        defaults to the environment variable TALEND_JOB2LAMBDA_WORKING_DIR
+                            if TALEND_JOB2LAMBDA_WORKING_DIR is not set defaults to HOME/tmp/job2lambda
+        stack_name:         defaults to the derived job_root variable
+        template_file_path: the AWS SAM cloud formation template file
+                            defaults to job_lambda_template.yaml in the current working directory.
+                            if no job_lambda_template.yaml file is found, then look in the job2lambda/config directory.
+                            if neither of those files is found, then the default here document in this bash script is used.
+        lambda_config_path  property settings used to configure aws lambda (e.g. aws roles, timeout, etc)
+        job_config_path     property settings used to configure an individual lambda job (e.g. memory)
 
 Global Environment Variables
 
-TALEND_JOB2LAMBDA_WORKING_DIR
+    TALEND_JOB2LAMBDA_WORKING_DIR
+
+Configuration Files
+
+Configurations are loaded from multiple locations.  First, common configurations are loaded from the job2lambda/config directory.
+Then any configurations in the current directory are loaded, potentially overriding some or all of the common configurations.
+Finally, files passed as the lambda_config_path or job_config_path parameters take precedence and are loaded, overriding the others.
+
+For lambda_config the default file names are always lambda.cfg.
+
+For job_config the default file names are config/job.cfg, PWD/job.cfg, and PWD/<job_root>.cfg.  So there is an additional layer of
+configuration for jobs versus lambda environment.
+
+Files passed via parameter of course can be naming anything.
+
+All configurations are consolidated and logged to <job_root>_config.log.
+
+Description
 
 The Talend job zip file located at job_zip_path is unzipped and modified in the working_dir.
-The packaged job layer file is stored in the job_zip_target_dir before being copied to s3_bucket.
+The packaged job layer file is stored in the job_zip_target_dir before being copied to the s3_bucket.
 The description and license parameters are passed along with the s3 zip file location to the Lambda Layer service.
 
 Talend Job naming conventions result in the job_zip_path file name being something like
@@ -47,21 +69,35 @@ Talend Job naming conventions result in the job_zip_path file name being somethi
 Note that the Talend job version does not necessarily match the git version.
 The Talend version may be set in the Job properties.
 
-The job will be published to the s3_bucket in a folder named <job_root>.
-Note that publishing a Job layer will result in overwriting the S3 target each time.
-This is fine since the s3 target is just a staging location.
+The job will be published to the s3_bucket in a folder named <job_root>/<sam_project_id> where sam_project_id
+is derived from the uuid used to generate the local directory.
 AWS Lambda automatically versions all Layers.
 The name of the layer will be just the job root name.
+Once the job zip file is published as a Layer, the Lambda itself will be created.
+The Talend Job version number is not used in the Lambda naming convention.
 
 For example, the local job zip file
     mypath/Spring_Resources_RDS_0.1.zip 
 would be published to 
-    s3://eost-lambda/Spring_Resources_RDS/Spring_Resources_RDS_0.1.zip
+    s3://eost-lambda/Spring_Resources_RDS/XXXXXX/Spring_Resources_RDS_0.1.zip
 and the resulting Layer would be
     Spring_Resources_RDS
+The Layer would be used by a Function with name
+    Spring-Resources-RDS-SpringResourcesRDS-E0BRXFU0H0BD
+The "Spring-Resources-RDS" portion of the Function name is the Stack Name.
+The "SpringResourcesRDS" is the logical resource id derived from the job name and rendered as alphanumeric (no underscores or hyphens) as required by AWS resource ids.
+The E0BRXFU0H0BD is generated by AWS when creating the Lambda resource and it can captured via the aws cloudformation describe command if needed.
+So the business key of this entity is the Stack Name and logical resource id.  The surrogate key is the E0BRXFU0H0BD generated by AWS.
+The Function would be part of a Cloud Formation Stack named
+    Spring-Resources-RDS
+Note that the Cloud Formation id uses hyphens rather than underscores.
+Within the Cloud Formation stack there is a Lambda resource with logical id Spring-Resources-RDS-SpringResourcesRDS-E0BRXFU0H0BD mentioned previously.
+Note that the logical resource id uses neither hyphens nor underscores.
 
-Once the job zip file is published as a Layer, the Lambda itself will be created.
-The Talend Job version number is not used in the Lambda naming convention.
+If you run this script multiple times for the same job, each run will have a different local working directory as well as S3 files created.
+So nothing will be overwritten or have collisions.
+Each run of this script will result in the creation of a new Layer that will be referenced by the Lambda Function.
+So it will update the existing Lambda rather than create a new Lambda.
 
 EOF
 
@@ -78,11 +114,13 @@ declare description="${5:-no description provided}"
 declare license="${6:-no license specified}"
 declare stack_name="${7:-}"
 declare template_file_path="${8:-}"
+declare lambda_config_path="${9:-}"
+declare job_config_path="${10:-}"
 
 required s3_bucket job_zip_path
 
 export INFO_LOG=true
-#export DEBUG_LOG=true
+export DEBUG_LOG=true
 
 declare aws_command
 which aws
@@ -138,85 +176,125 @@ debugVar job_file_root
 debugVar job_root
 debugVar lambda_root
 
+declare sam_project_dir=$(mktemp -u -p ${PWD} -d "${job_root}-XXXXXX")
+declare sam_project_id="${sam_project_dir:(-6)}"
+
+declare job_resource_id="${job_root}"
+job_resource_id="${job_resource_id//_/}"
+job_resource_id="${job_resource_id//-/}"
+
+#
+# source common configuration
+# the only difference between this and directly sourcing the config file is an additional pass of variable expansion
+# this means that variables could be expanded on the left hand side of the equal sign
+#
+function source_config() {
+
+    local config_file_path="${1}"
+    local temp_dir="${2:-${PWD}}"
+    local temp_config
+
+    temp_config=$(mktemp -p "${temp_dir}")
+
+    if [[ -r "${config_file_path}" ]]; then
+        template_file "${config_file_path}" > "${temp_config}"
+        source "${temp_config}"
+        rm "${temp_config}"
+    fi
+}
+
+
+#
+# returns a string of all config settings
+#
+function job2lambda_config_settings() {
+
+cat <<EOF
+
+# devops settings
+sam_project_id="${sam_project_id}"
+
+# lambda config settings
+aws_description="${aws_description}"
+aws_role="${aws_role}"
+aws_timeout="${aws_timeout}"
+talend_job_handler_class="${talend_job_handler_class}"
+talend_job_handler_jar_path="${talend_job_handler_jar_path}"
+# lambda config settings end
+
+# job config settings
+talend_job_layer_version_arn="${talend_job_layer_version_arn}"
+aws_memory_size="${aws_memory_size}"
+talend_job_class_name="${talend_job_class_name}"
+talend_context_file="${talend_context_file}"
+# job config settings end
+
+EOF
+}
+
+
 infoLog "Creating lambda layer zip file"
 debugLog "job_to_lambda '${job_zip_path}' '${job_zip_target_dir}' '${working_dir}'" 
 job_to_lambda "${job_zip_path}" "${job_zip_target_dir}" "${working_dir}"
 
 infoLog "Copying lambda layer zip file to s3"
-debugLog "${aws_command} s3 cp '${job_zip_target_dir}/${job_file_root}.zip' 's3://${s3_bucket}/${job_root}/${job_file_name}'"
-"${aws_command}" s3 cp "${job_zip_target_dir}/${job_file_root}.zip" "s3://${s3_bucket}/${job_root}/${job_file_name}"
+debugLog "${aws_command} s3 cp '${job_zip_target_dir}/${job_file_root}.zip' 's3://${s3_bucket}/${job_root}/${sam_project_id}/${job_file_name}'"
+"${aws_command}" s3 cp "${job_zip_target_dir}/${job_file_root}.zip" "s3://${s3_bucket}/${job_root}/${sam_project_id}/${job_file_name}"
 
+infoLog "Publishing layer"
 declare publish_layer_result
 publish_layer_result=$( ${aws_command} lambda publish-layer-version \
     --layer-name "${job_root}" \
     --description "${description}" \
     --license-info "${license}" \
     --compatible-runtimes "java8" \
-    --content "S3Bucket=${s3_bucket},S3Key=${job_root}/${job_file_name}" )
+    --content "S3Bucket=${s3_bucket},S3Key=${job_root}/${sam_project_id}/${job_file_name}" )
 debugVar publish_layer_result
 
 declare talend_job_layer_version_arn
 talend_job_layer_version_arn=$( echo ${publish_layer_result} | jq -r .LayerVersionArn )
 debugVar talend_job_layer_version_arn
 
-infoLog "SAM init"
-debugLog "SAM init: ${PWD}/${job_root}"
-sam init --name "${job_root}" --runtime java8 --no-input
+# source shared aws lambda configuration
+source_config "${job2lambda_dir}/../config/lambda.cfg"
+source_config "${PWD}/lambda.cfg"
+source_config "${lambda_config_path}"
 
-# config settings
-aws_description="An AWS Serverless Specification template describing your function"
-aws_role="arn:aws:iam::115057027035:role/eost-lambda"
-aws_timeout="15"
-talend_job_handler_class="com.talend.se.lambda.handler.TalendJobHandler"
-talend_job_handler_jar_path="../handler-0.0.1-SNAPSHOT.jar"
+# source job configuration
+source_config "${job2lambda_dir}/../config/job.cfg"
+source_config "${PWD}/job.cfg"
+source_config "${PWD}/${job_root}.cfg"
+source_config "${job_config_path}"
 
-#parameters
-# talend_job_layer_version_arn extracted above
-aws_memory_size=512
-talend_job_class_name="se_demo.spring_resources_rds_0_1.Spring_Resources_RDS"
-talend_context_file="contexts/Default.properties"
-
-
-declare config_settings
-define config_settings <<EOF
-
-# config_settings
-aws_description="${aws_description}"
-aws_role="${aws_role}"
-aws_timeout="${aws_timeout}"
-talend_job_handler_class="${talend_job_handler_class}"
-talend_job_handler_jar_path="${talend_job_handler_jar_path}"
-# config_settings_end
-
-#parameters
-talend_job_layer_version_arn="${talend_job_layer_version_arn}"
-aws_memory_size="${aws_memory_size}"
-talend_job_class_name="${talend_job_class_name}"
-talend_context_file="${talend_context_file}"
-#parameters_end
-EOF
-
+declare config_settings="$(job2lambda_config_settings)"
 debugLog "${config_settings}"
 
-cd "${job_root}"
-infoLog "Adding generic Talend Job Handler"
-debugLog "Copying '${talend_job_handler_jar_path}' to '${PWD}'"
-cp "${talend_job_handler_jar_path}" "${PWD}"
 
-infoLog "Creating SAM template"
-debugLog "SAM template: ${PWD}/template.yaml"
+infoLog "SAM init: ${sam_project_dir}"
+sam init --name "${sam_project_dir}" --runtime java8 --no-input
+
+cd "${sam_project_dir}"
+
+echo "${config_settings}" > "${job_root}_config.log"
+
+infoLog "Adding generic Talend Job Handler"
+debugLog "Copying '${talend_job_handler_jar_path}' to '${sam_project_dir}'"
+cp "${talend_job_handler_jar_path}" "${sam_project_dir}"
 
 if [[ -r "${template_file_path}" ]]; then
+    infoLog "Creating SAM template from ${template_file_path}"
     template_file "${template_file_path}" > template.yaml
-elif [[ -r "${PWD}/job_lambda_template.yaml" ]]; then
-    template_file "${PWD}/job_lambda_template.yaml" > template.yaml
+elif [[ -r "${job2lambda_dir}/../config/job_lambda_template.yaml" ]]; then
+    infoLog "Creating SAM template from  ${job2lambda_dir}/../config/job_lambda_template.yaml"
+    template_file "${job2lambda_dir}/../config/job_lambda_template.yaml" > template.yaml
 else
+    infoLog "Creating SAM template from here document"
     cat > template.yaml <<EOF
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31' 
 Description: ${aws_description}
 Resources:
-  TalendRDS:
+  ${job_resource_id}:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: ${talend_job_handler_class}
@@ -242,8 +320,8 @@ debugLog "sam package --s3-bucket '${s3_bucket}' --output-template-file '${job_r
 sam package --s3-bucket "${s3_bucket}" --output-template-file "${job_root}.yaml"
 
 infoLog "SAM Deploy: deploying SAM generated template"
-debugLog "sam deploy --template-file ${PWD}/${job_root}.yaml --stack-name ${stack_name}"
-sam deploy --template-file "${PWD}/${job_root}.yaml" --stack-name "${stack_name}"
+debugLog "sam deploy --template-file ${sam_project_dir}/${job_root}.yaml --stack-name ${stack_name}"
+sam deploy --template-file "${sam_project_dir}/${job_root}.yaml" --stack-name "${stack_name}"
 
 aws cloudformation describe-stack-events --stack-name "${stack_name}" > "${stack_name}.log"
 

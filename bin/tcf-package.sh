@@ -165,7 +165,8 @@ function lambda_process_zip() {
     debugLog "Creating ${working_dir}/${job_file_root}/java"
     mkdir -p "${working_dir}/${job_file_root}/java"
 
-    debugLog "moving '${working_dir}/${job_file_root}/lib' to '${working_dir}/${job_file_root}/java/lib'"
+    debugLog "moving libs '${working_dir}/${job_file_root}/lib' to '${working_dir}/${job_file_root}/java'"
+    echo "mv ${working_dir}/${job_file_root}/lib ${working_dir}/${job_file_root}/java"
     mv "${working_dir}/${job_file_root}/lib" "${working_dir}/${job_file_root}/java"
 
     debugLog "moving jar files from '${working_dir}/${job_file_root}/${job_root}' to '${working_dir}/${job_file_root}/java/lib'"
