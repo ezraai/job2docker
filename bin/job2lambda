@@ -20,10 +20,21 @@ Repackage a standard Talend job zip file as a Layer and publish to AWS Lambda us
 
 See https://docs.aws.amazon.com/cli/latest/reference/lambda/publish-layer-version.html
 
-./job2lambda <s3_bucket> <job_zip_path> [ <job_zip_target_dir> [ <working_dir> [ <description> [ <license> ] ] ] ]
+./job2lambda <s3_bucket> <job_zip_path> [ <job_zip_target_dir> [ <working_dir> [ <description> [ <license> ] [ <stack_name> [ <template_file_path> ] ] ] ] ] ]
 
-s3_bucket:    s3 bucket where lambda layer will be stored 
-job_zip_path: the path to the talend job zip file
+s3_bucket:          s3 bucket where lambda layer will be stored 
+job_zip_path:       the path to the talend job zip file
+job_zip_target_dir: defaults to the current working directory
+working_dir:        defaults to the environment variable TALEND_JOB2LAMBDA_WORKING_DIR
+                    If TALEND_JOB2LAMBDA_WORKING_DIR is not set defaults to HOME/tmp/job2lambda
+stack_name:         defaults to the derived job_root variable
+template_file_path: defaults to job_lambda_template.yaml in the current working directory.
+                    If no job_lambda_template.yaml file is found, then the job_lambda_template.yaml in the job2lambda/config directory will be used.
+                    If neither of those files is found, then the default here document in this bash script is used.
+
+Global Environment Variables
+
+TALEND_JOB2LAMBDA_WORKING_DIR
 
 The Talend job zip file located at job_zip_path is unzipped and modified in the working_dir.
 The packaged job layer file is stored in the job_zip_target_dir before being copied to s3_bucket.
@@ -37,14 +48,20 @@ Note that the Talend job version does not necessarily match the git version.
 The Talend version may be set in the Job properties.
 
 The job will be published to the s3_bucket in a folder named <job_root>.
+Note that publishing a Job layer will result in overwriting the S3 target each time.
+This is fine since the s3 target is just a staging location.
+AWS Lambda automatically versions all Layers.
+The name of the layer will be just the job root name.
+
 For example, the local job zip file
     mypath/Spring_Resources_RDS_0.1.zip 
 would be published to 
     s3://eost-lambda/Spring_Resources_RDS/Spring_Resources_RDS_0.1.zip
+and the resulting Layer would be
+    Spring_Resources_RDS
 
-Note that publishing a Job layer will result in overwriting the S3 target each time.
-This is fine since the s3 target is just a staging location.
-AWS Lambda automatically versions all Layers.
+Once the job zip file is published as a Layer, the Lambda itself will be created.
+The Talend Job version number is not used in the Lambda naming convention.
 
 EOF
 
@@ -56,14 +73,16 @@ fi
 declare s3_bucket="${1:-}"
 declare job_zip_path="${2:-}"
 declare job_zip_target_dir="${3:-${PWD}}"
-declare working_dir="${4:-}"
+declare working_dir="${4:-${TALEND_JOB2LAMBDA_WORKING_DIR:-}}"
 declare description="${5:-no description provided}"
 declare license="${6:-no license specified}"
+declare stack_name="${7:-}"
+declare template_file_path="${8:-}"
 
 required s3_bucket job_zip_path
 
 export INFO_LOG=true
-export DEBUG_LOG=true
+#export DEBUG_LOG=true
 
 declare aws_command
 which aws
@@ -83,46 +102,149 @@ python3.7 --version
 declare job_file_name
 declare job_file_root
 declare job_root
+declare lambda_root
 declare job_root_pattern="_+([0-9])\.+([0-9])*"
 # "-+([0-9])\.+([0-9])\.+([0-9])*"
 
 parse_job_zip_path "${job_zip_path}" "${job_root_pattern}" job_file_name job_file_root job_root
 
+# lambda cloud formation stacks cannot use underscore _, so replace with hyphen -
+# lambda_root must match regex [a-zA-Z][-a-zA-Z0-9]*|arn:[-a-zA-Z0-9:/._+]*
+
+if [[ "${job_root}" =~ ^[a-zA-Z][-a-zA-Z0-9]*$|^arn:[-a-zA-Z0-9:/._+]*$ ]] ; then
+    lambda_root="${job_root}"
+else
+    infoLog "Job name '${job_root}'does not match cloud formation stack name pattern ^[a-zA-Z][-a-zA-Z0-9]*$|^arn:[-a-zA-Z0-9:/._+]*$"
+    lambda_root="${job_root//_/-}"
+    infoLog "Replacing underscore with hyphen '${lambda_root}'"
+    if [[ ! "${lambda_root}" =~ ^[a-zA-Z][-a-zA-Z0-9]*$|^arn:[-a-zA-Z0-9:/._+]*$ ]] ; then
+        infoLog "Job name '${lambda_root}' is still not a valid cloud formation stack name.  Exiting."
+        exit 1
+    fi
+fi
+stack_name="${stack_name:-${lambda_root}}"
+
+debugVar s3_bucket
 debugVar job_zip_path
+debugVar job_zip_target_dir
+debugVar working_dir
+debugVar description
+debugVar license
+debugVar stack_name
+debugVar template_file_path
+
 debugVar job_file_name
 debugVar job_file_root
 debugVar job_root
+debugVar lambda_root
 
-infoLog "Creating lambda layer zip file: job_to_lambda '${job_zip_path}' '${job_zip_target_dir}' '${working_dir}'" 
+infoLog "Creating lambda layer zip file"
+debugLog "job_to_lambda '${job_zip_path}' '${job_zip_target_dir}' '${working_dir}'" 
 job_to_lambda "${job_zip_path}" "${job_zip_target_dir}" "${working_dir}"
 
-infoLog "Copying lambda layer zip file to s3: ${aws_command} s3 cp '${job_zip_target_dir}/${job_file_root}.zip' 's3://${s3_bucket}/${job_root}/${job_file_name}'"
+infoLog "Copying lambda layer zip file to s3"
+debugLog "${aws_command} s3 cp '${job_zip_target_dir}/${job_file_root}.zip' 's3://${s3_bucket}/${job_root}/${job_file_name}'"
 "${aws_command}" s3 cp "${job_zip_target_dir}/${job_file_root}.zip" "s3://${s3_bucket}/${job_root}/${job_file_name}"
 
-cat <<EOF
-
-Creating lambda layer:
-
-${aws_command} lambda publish-layer-version \
+declare publish_layer_result
+publish_layer_result=$( ${aws_command} lambda publish-layer-version \
     --layer-name "${job_root}" \
     --description "${description}" \
     --license-info "${license}" \
     --compatible-runtimes "java8" \
-    --content "S3Bucket=${s3_bucket},S3Key=${job_root}/${job_file_name}"
+    --content "S3Bucket=${s3_bucket},S3Key=${job_root}/${job_file_name}" )
+debugVar publish_layer_result
 
+declare talend_job_layer_version_arn
+talend_job_layer_version_arn=$( echo ${publish_layer_result} | jq -r .LayerVersionArn )
+debugVar talend_job_layer_version_arn
+
+infoLog "SAM init"
+debugLog "SAM init: ${PWD}/${job_root}"
+sam init --name "${job_root}" --runtime java8 --no-input
+
+# config settings
+aws_description="An AWS Serverless Specification template describing your function"
+aws_role="arn:aws:iam::115057027035:role/eost-lambda"
+aws_timeout="15"
+talend_job_handler_class="com.talend.se.lambda.handler.TalendJobHandler"
+talend_job_handler_jar_path="../handler-0.0.1-SNAPSHOT.jar"
+
+#parameters
+# talend_job_layer_version_arn extracted above
+aws_memory_size=512
+talend_job_class_name="se_demo.spring_resources_rds_0_1.Spring_Resources_RDS"
+talend_context_file="contexts/Default.properties"
+
+
+declare config_settings
+define config_settings <<EOF
+
+# config_settings
+aws_description="${aws_description}"
+aws_role="${aws_role}"
+aws_timeout="${aws_timeout}"
+talend_job_handler_class="${talend_job_handler_class}"
+talend_job_handler_jar_path="${talend_job_handler_jar_path}"
+# config_settings_end
+
+#parameters
+talend_job_layer_version_arn="${talend_job_layer_version_arn}"
+aws_memory_size="${aws_memory_size}"
+talend_job_class_name="${talend_job_class_name}"
+talend_context_file="${talend_context_file}"
+#parameters_end
 EOF
 
+debugLog "${config_settings}"
 
-declare layer_version_arn
+cd "${job_root}"
+infoLog "Adding generic Talend Job Handler"
+debugLog "Copying '${talend_job_handler_jar_path}' to '${PWD}'"
+cp "${talend_job_handler_jar_path}" "${PWD}"
 
-layer_version_arn=(${aws_command} lambda publish-layer-version \
-    --layer-name "${job_root}" \
-    --description "${description}" \
-    --license-info "${license}" \
-    --compatible-runtimes "java8" \
-    --content "S3Bucket=${s3_bucket},S3Key=${job_root}/${job_file_name}") > job2lambda.out
+infoLog "Creating SAM template"
+debugLog "SAM template: ${PWD}/template.yaml"
 
-cat job2lambda.out | jq .LayerVersionArn
+if [[ -r "${template_file_path}" ]]; then
+    template_file "${template_file_path}" > template.yaml
+elif [[ -r "${PWD}/job_lambda_template.yaml" ]]; then
+    template_file "${PWD}/job_lambda_template.yaml" > template.yaml
+else
+    cat > template.yaml <<EOF
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31' 
+Description: ${aws_description}
+Resources:
+  TalendRDS:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: ${talend_job_handler_class}
+      Runtime: java8
+      CodeUri: .
+      Description: 'generic talend job handler'
+      MemorySize: ${aws_memory_size}
+      Timeout: ${aws_timeout}
+      Role: >-
+        ${aws_role}
+      Environment:
+        Variables:
+          TalendContextFiles: ${talend_context_file}
+          TalendJobClassName: ${talend_job_class_name}
+      Layers:
+        - '${talend_job_layer_version_arn}'
+
+EOF
+fi
+
+infoLog "SAM Package: creating Cloud Formation template"
+debugLog "sam package --s3-bucket '${s3_bucket}' --output-template-file '${job_root}.yaml'"
+sam package --s3-bucket "${s3_bucket}" --output-template-file "${job_root}.yaml"
+
+infoLog "SAM Deploy: deploying SAM generated template"
+debugLog "sam deploy --template-file ${PWD}/${job_root}.yaml --stack-name ${stack_name}"
+sam deploy --template-file "${PWD}/${job_root}.yaml" --stack-name "${stack_name}"
+
+aws cloudformation describe-stack-events --stack-name "${stack_name}" > "${stack_name}.log"
 
 infoLog "Finished"
-

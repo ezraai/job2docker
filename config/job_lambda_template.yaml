@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: ${aws_description}
+Resources:
+  TalendRDS:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: ${talend_job_handler_class}
+      Runtime: java8
+      CodeUri: .
+      Description: 'generic talend job handler'
+      MemorySize: ${aws_memory_size}
+      Timeout: ${aws_timeout}
+      Role: >-
+        ${aws_role}
+      Environment:
+        Variables:
+          TalendContextFiles: ${talend_context_file}
+          TalendJobClassName: ${talend_job_class_name}
+      Layers:
+        - '${talend_job_layer_version_arn}'
+
+

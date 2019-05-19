@@ -12,6 +12,13 @@ export UTIL_FLAG=1
 define(){ IFS=$'\n' read -r -d '' "${1}" || true; }
 
 
+function template_file() {
+eval "cat <<EOF
+$(<${1})
+EOF
+" 2> /dev/null
+}
+
 function warningLog() {
     [ -n "${WARNING_LOG:-}" ] && echo "WARNING: ${*} : ${FUNCNAME[*]:1}" 1>&2
     return 0

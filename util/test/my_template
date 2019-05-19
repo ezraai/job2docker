@@ -1,0 +1,3 @@
+this variable is defined ${my_var}
+
+this variable is not defined ${not_defined:-}
