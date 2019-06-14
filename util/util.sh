@@ -150,10 +150,12 @@ declare -f -t trap_add
 
 
 export -f define
-export -f debugLog
-export -f debugVar
+export -f template_file
+export -f warningLog
 export -f infoLog
 export -f infoVar
+export -f debugLog
+export -f debugVar
 export -f debugStack
 export -f die
 export -f try
