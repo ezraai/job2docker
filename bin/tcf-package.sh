@@ -6,7 +6,7 @@ export TCF_PACKAGE_FLAG=1
 
 set -u
 
-tcf_package_script_path=$(readlink -e "${BASH_SOURCE[0]}")
+tcf_package_script_path=$(greadlink -e "${BASH_SOURCE[0]}")
 tcf_package_script_dir="${tcf_package_script_path%/*}"
 
 source "${tcf_package_script_dir}/tcf-env.sh"
