@@ -314,7 +314,7 @@ function job_to_docker() {
     # delete local zip file copy when finished
     # this needs to occur after zip command since zip does not like the additional file desriptor
     local working_zip_path_fd
-    exec {working_zip_path_fd}>"${tmp_working_dir}/${job_file_name}"
+    exec ${working_zip_path_fd}>"${tmp_working_dir}/${job_file_name}"
     rm "${tmp_working_dir}/${job_file_name}"
 
     tar -C "${tmp_working_dir}" -zcpf "${tmp_working_dir}/${job_root}.tgz" "${job_file_root}"
