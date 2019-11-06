@@ -6,12 +6,12 @@ set -u
 
 export REPO_FLAG=1
 
-repo_script_path=$(readlink -e "${BASH_SOURCE[0]}")
+repo_script_path=$(greadlink -e "${BASH_SOURCE[0]}")
 repo_script_dir="${repo_script_path%/*}"
 
 source "${repo_script_dir}/tcf-env.sh"
 
-repo_array_path=$(readlink -e "${repo_script_dir}/array-util${RESOURCE_VERSION}.sh")
+repo_array_path=$(greadlink -e "${repo_script_dir}/array-util${RESOURCE_VERSION}.sh")
 source "${repo_array_path}"
 
 

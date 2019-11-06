@@ -6,12 +6,12 @@ set -u
 
 export FILE_UTIL_FLAG=1
 
-file_util_script_path=$(readlink -e "${BASH_SOURCE[0]}")
+file_util_script_path=$(greadlink -e "${BASH_SOURCE[0]}")
 file_util_script_dir="${file_util_script_path%/*}"
 
 source "${file_util_script_dir}/tcf-env.sh"
 
-file_util_util_path=$(readlink -e "${file_util_script_dir}/util${RESOURCE_VERSION}.sh")
+file_util_util_path=$(greadlink -e "${file_util_script_dir}/util${RESOURCE_VERSION}.sh")
 source "${file_util_util_path}"
 
 

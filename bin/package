@@ -4,7 +4,7 @@ set -e
 set -u
 set -o pipefail
 
-package_script_path=$(readlink -e "${BASH_SOURCE[0]}")
+package_script_path=$(greadlink -e "${BASH_SOURCE[0]}")
 package_script_dir="${package_script_path%/*}"
 
 source "${package_script_dir}/tcf-env.sh"

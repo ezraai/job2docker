@@ -1,13 +1,13 @@
 set -e
 # set -x
 
-script_path=$(readlink -e "${BASH_SOURCE[0]}")
+script_path=$(greadlink -e "${BASH_SOURCE[0]}")
 script_dir="${script_path%/*}"
 
-#util_path=$(readlink -e "${script_dir}/../util.sh")
+#util_path=$(greadlink -e "${script_dir}/../util.sh")
 #source "${util_path}"
 
-url_path=$(readlink -e "${script_dir}/../url.sh")
+url_path=$(greadlink -e "${script_dir}/../url.sh")
 source "${url_path}"
 
 declare -A url_array

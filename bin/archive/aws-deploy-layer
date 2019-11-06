@@ -4,7 +4,7 @@ set -e
 set -u
 set -o pipefail
 
-aws_deploy_layer_path=$(readlink -e "${BASH_SOURCE[0]}")
+aws_deploy_layer_path=$(greadlink -e "${BASH_SOURCE[0]}")
 aws_deploy_layer_dir="${aws_deploy_layer_path%/*}"
 
 #source ../util/util.sh

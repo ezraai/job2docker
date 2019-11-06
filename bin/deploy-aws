@@ -3,7 +3,7 @@
 set -e
 set -u
 
-deploy_aws_script_path=$(readlink -e "${BASH_SOURCE[0]}")
+deploy_aws_script_path=$(greadlink -e "${BASH_SOURCE[0]}")
 deploy_aws_script_dir="${deploy_aws_script_path%/*}"
 
 source "${deploy_aws_script_dir}/tcf-env.sh"
