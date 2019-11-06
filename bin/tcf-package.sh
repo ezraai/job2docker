@@ -104,7 +104,7 @@ function multi_job() {
     # collisions are most likely with the routines.jar which has a common name but potentially different content
     mv "${working_dir}/${job_file_root}/lib/routines.jar" "${working_dir}/${job_file_root}/lib/routines_${job_root}.jar"
     # sed command to tweak shell script to use routines_${job_root}.jar
-    sed -i "s/routines\.jar/routines_${job_root}\.jar/g" "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
+    sed -i "" "s/routines\.jar/routines_${job_root}\.jar/g" "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
 }
 
 
@@ -132,12 +132,12 @@ function process_zip() {
     debugLog "rename 'routines.jar' to 'routines_${job_root}.jar'"
     mv "${working_dir}/${job_file_root}/lib/routines.jar" "${working_dir}/${job_file_root}/lib/routines_${job_root}.jar"
     debugLog "tweak shell script to use 'routines_${job_root}.jar'"
-    sed -i "s/routines\.jar/routines_${job_root}\.jar/g" "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
+    sed -i "" "s/routines\.jar/routines_${job_root}\.jar/g" "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
 
 #    [ "${is_multi_job}" == "true" ] && multi_job "${working_dir}" "${job_file_root}" "${job_root}"
 
     debugLog "insert exec at beginning of java invocation"
-    sed -i "s/^java /exec java /g" "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
+    sed -i "" "s/^java /exec java /g" "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
     debugLog "set exec permission since it is not set and is not maintianed by zip format"
     chmod +x "${working_dir}/${job_file_root}/${job_root}/${job_root}_run.sh"
 }
