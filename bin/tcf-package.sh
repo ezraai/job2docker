@@ -301,7 +301,7 @@ function job_to_docker() {
     default_working_dir="${working_dir:-${TMPDIR:-${HOME}/tmp/job2docker}}"
     mkdir -p "${default_working_dir}"
     [ ! -w "${default_working_dir}" ] && errorMessage "Working directory '${default_working_dir}' is not writeable" && return 1
-    tmp_working_dir=$(mktemp -d -p "${default_working_dir}" "XXXXXX")
+    tmp_working_dir=$(mktemp -d "${default_working_dir}" "XXXXXX")
     debugVar tmp_working_dir
 
     parse_job_zip_path "${job_zip_path}" "${job_root_pattern}" job_file_name job_file_root job_root
@@ -349,7 +349,7 @@ function job_to_lambda() {
     default_working_dir="${working_dir:-${TMPDIR:-${HOME}/tmp/job2lambda}}"
     mkdir -p "${default_working_dir}"
     [ ! -w "${default_working_dir}" ] && errorMessage "Working directory '${default_working_dir}' is not writeable" && return 1
-    tmp_working_dir=$(mktemp -d -p "${default_working_dir}" "XXXXXX")
+    tmp_working_dir=$(mktemp -d "${default_working_dir}" "XXXXXX")
     debugVar tmp_working_dir
 
     infoLog "Copying '${job_zip_path}' to working directory '${tmp_working_dir}'"
