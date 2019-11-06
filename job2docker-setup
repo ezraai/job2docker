@@ -4,7 +4,7 @@ set -e
 set -u
 set -o pipefail
 
-declare -r git_repo="https://github.com/Talend/job2docker.git"
+declare -r git_repo="https://github.com/ezraai/job2docker.git"
 declare -r work_dir="j2d"
 
 declare -r shared_job_dir="${1:-${HOME}/shared_jobs}"

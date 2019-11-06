@@ -9,7 +9,7 @@
 Use git clone to download this repository.
 
 ````bash
-git clone https://github.com/Talend/job2docker.git
+git clone https://github.com/ezraai/job2docker.git
 ````
 
 ## Create a Shared Directory
